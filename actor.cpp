@@ -82,6 +82,14 @@ namespace may
     _angle += angle;
   }
 
+  void actor::input(may::game_state &state)
+  {
+  }
+
+  void actor::update(may::game_state &state)
+  {
+  }
+
   image_actor::image_actor(const char *image_path, int width, int height) : image_actor(image_path, 0.0, 0.0, width, height, 0.0)
   {
   }
@@ -97,7 +105,7 @@ namespace may
     this->_pivot_x = width / 2.0;
     this->_pivot_y = height / 2.0;
   }
-  
+
   may::image &image_actor::image()
   {
     return _image;
@@ -115,7 +123,7 @@ namespace may
     SDL_FPoint pivot = {_pivot_x, _pivot_y};
 
     int err = SDL_RenderCopyExF(renderer, texture, nullptr, &dest, _angle * 180 * M_1_PI, &pivot, SDL_FLIP_NONE);
-    if(err)
+    if (err)
     {
       fprintf(stderr, "Could not render %s: %s\n", image().title(), SDL_GetError());
       exit(EXIT_FAILURE);
@@ -134,21 +142,21 @@ namespace may
   {
   }
 
-  void simple_actor::update(may::game_state &state)
+  void simple_actor::input(may::game_state &state)
   {
-    if(state.is_key_pressed(SDLK_UP))
+    if (state.is_key_pressed(SDLK_UP))
     {
       _y -= _speed * state.delta_time();
     }
-    if(state.is_key_pressed(SDLK_DOWN))
+    if (state.is_key_pressed(SDLK_DOWN))
     {
       _y += _speed * state.delta_time();
     }
-    if(state.is_key_pressed(SDLK_LEFT))
+    if (state.is_key_pressed(SDLK_LEFT))
     {
       _x -= _speed * state.delta_time();
     }
-    if(state.is_key_pressed(SDLK_RIGHT))
+    if (state.is_key_pressed(SDLK_RIGHT))
     {
       _x += _speed * state.delta_time();
     }
@@ -161,36 +169,64 @@ namespace may
   floating_actor::floating_actor(const char *image_path, double x, double y, int width, int height, double angle) : floating_actor(image_path, x, y, width, height, angle, 100, M_PI)
   {
   }
-  
+
   floating_actor::floating_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : image_actor(image_path, x, y, width, height, angle, speed, rot_speed)
   {
     this->_vx = 0.0;
     this->_vy = 0.0;
   }
 
-  void floating_actor::update(may::game_state & state)
+  void floating_actor::update(may::game_state &state)
   {
-    if(state.is_key_pressed(SDLK_UP)){
-      _vx += cos(_angle) * _speed * state.delta_time();
-      _vy += sin(_angle) * _speed * state.delta_time();
-    }
-    if(state.is_key_pressed(SDLK_DOWN)){
-      _vx -= cos(_angle) * _speed * state.delta_time();
-      _vy -= sin(_angle) * _speed * state.delta_time();
-    }
-    if(state.is_key_pressed(SDLK_LEFT)){
-      rotate(-_rot_speed * state.delta_time());
-    }
-    if(state.is_key_pressed(SDLK_RIGHT)){
-      rotate(_rot_speed * state.delta_time());
-    }
-
     move(_vx * state.delta_time(), _vy * state.delta_time());
   }
+
+  void floating_actor::input(may::game_state &state)
+  {
+    if (state.is_key_pressed(SDLK_UP))
+    {
+      accelerate(_speed * state.delta_time() * cos(_angle),
+                 _speed * state.delta_time() * sin(_angle));
+    }
+
+    if (state.is_key_pressed(SDLK_DOWN))
+    {
+      accelerate(-_speed * state.delta_time() * cos(_angle),
+                 -_speed * state.delta_time() * sin(_angle));
+    }
+
+    if (state.is_key_pressed(SDLK_LEFT))
+    {
+      rotate(-_rot_speed * state.delta_time());
+    }
+
+    if (state.is_key_pressed(SDLK_RIGHT))
+    {
+      rotate(_rot_speed * state.delta_time());
+    }
+  }
+
   void floating_actor::render(SDL_Renderer *renderer)
   {
     this->image_actor::render(renderer);
     SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
     SDL_RenderDrawLineF(renderer, static_cast<float>(_x + _width / 2.0), static_cast<float>(_y + _height / 2.0), static_cast<float>(_x + _vx / 4.0 + _width / 2.0), static_cast<float>(_y + _vy / 4.0 + _height / 2.0));
+  }
+
+  SDL_FPoint floating_actor::velocity() const
+  {
+    return {_vx, _vy};
+  }
+
+  void floating_actor::velocity(double vx, double vy)
+  {
+    _vx = vx;
+    _vy = vy;
+  }
+
+  void floating_actor::accelerate(double vx, double vy)
+  {
+    _vx += vx;
+    _vy += vy;
   }
 }

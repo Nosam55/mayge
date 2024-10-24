@@ -1,6 +1,7 @@
 #ifndef COMMON_HPP_
 #define COMMON_HPP_
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_rect.h>
 #include <map>
 
 namespace may

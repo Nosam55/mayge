@@ -13,6 +13,7 @@ namespace may
   app::app() : _window("My App", SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED),
                _shooter("shooter.png")
   {
+    background_color(0xFF, 0xFF, 0xFF, 0xFF);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
       fprintf(stderr, "Error initializing SDL: %s\n", SDL_GetError());
@@ -77,54 +78,21 @@ namespace may
       window.update_surface();
 
       SDL_Renderer *renderer = window.accelerated_renderer();
-      may::floating_actor player("shooter.png", 100.0, 100.0, 50, 40, 0.0);
 
       game_state().tick(SDL_GetTicks64());
       game_state().tick(SDL_GetTicks64());
       for (bool quit = false; !quit; quit)
       {
         quit = process_events();
-        if(game_state().is_key_pressed(SDLK_ESCAPE))
+        if (game_state().is_key_pressed(SDLK_ESCAPE))
         {
           quit = true;
         }
 
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0XFF, 0xFF, 0xFF);
+        SDL_SetRenderDrawColor(renderer, _bgr, _bgg, _bgb, _bga);
         SDL_RenderClear(renderer);
 
-        SDL_Rect fillRect = {
-            static_cast<int>(SCREEN_WIDTH / 4),
-            static_cast<int>(SCREEN_HEIGHT / 4),
-            static_cast<int>(SCREEN_WIDTH / 2),
-            static_cast<int>(SCREEN_HEIGHT / 2)};
-
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
-        SDL_RenderFillRect(renderer, &fillRect);
-
-        player.update(game_state());
-        
-        // Window border checking
-        SDL_FPoint player_pos = player.position();
-        player_pos.x = fmodf64(player_pos.x, (double)SCREEN_WIDTH);
-        player_pos.y = fmodf64(player_pos.y, (double)SCREEN_HEIGHT);
-        if(player_pos.x < 0){
-          player_pos.x = (double)SCREEN_WIDTH - 5.0;
-        }
-        if(player_pos.y < 0){
-          player_pos.y = (double)SCREEN_HEIGHT - 5.0;
-        }
-        player.position(player_pos);
-        ////////////////////////
-
-        if(may::colliding(fillRect, player.bounding_box()))
-        {
-          SDL_SetTextureColorMod(player.image().texture(), 0xFF, 0x00, 0x00);
-        }
-        else
-        {
-          SDL_SetTextureColorMod(player.image().texture(), 0xFF, 0xFF, 0xFF);
-        }
-        player.render(renderer);
+        game_loop(renderer);
 
         SDL_RenderPresent(renderer);
 
@@ -135,5 +103,56 @@ namespace may
     {
       fprintf(stderr, "Caught exception: %s\n", ex.what());
     }
+  }
+
+  void app::game_loop(SDL_Renderer *renderer)
+  {
+    static may::floating_actor player("shooter.png", 100.0, 100.0, 50, 40, 0.0);
+
+    player.input(game_state());
+    player.update(game_state());
+
+    // Window border checking
+    SDL_FPoint player_pos = player.position();
+    player_pos.x = fmodf64(player_pos.x, (double)SCREEN_WIDTH);
+    player_pos.y = fmodf64(player_pos.y, (double)SCREEN_HEIGHT);
+    if (player_pos.x < 0)
+    {
+      player_pos.x = (double)SCREEN_WIDTH - 5.0;
+    }
+    if (player_pos.y < 0)
+    {
+      player_pos.y = (double)SCREEN_HEIGHT - 5.0;
+    }
+    player.position(player_pos);
+    ////////////////////////
+
+    SDL_Rect fillRect = {
+        static_cast<int>(SCREEN_WIDTH / 4),
+        static_cast<int>(SCREEN_HEIGHT / 4),
+        static_cast<int>(SCREEN_WIDTH / 2),
+        static_cast<int>(SCREEN_HEIGHT / 2)};
+
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
+    SDL_RenderFillRect(renderer, &fillRect);
+
+    if (may::colliding(fillRect, player.bounding_box()))
+    {
+      SDL_SetTextureBlendMode(player.image().texture(), SDL_BLENDMODE_MUL);
+    }
+    else
+    {
+      SDL_SetTextureBlendMode(player.image().texture(), SDL_BLENDMODE_BLEND);
+    }
+
+    player.render(renderer);
+  }
+
+  void app::background_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+  {
+    _bgr = r;
+    _bgg = g;
+    _bgb = b;
+    _bga = a;
   }
 }

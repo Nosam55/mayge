@@ -65,6 +65,17 @@ namespace may
     return renderer;
   }
 
+  const char *window::title() const
+  {
+    return this->_title;
+  }
+
+  void window::title(const char *__title)
+  {
+    this->_title = __title;
+    SDL_SetWindowTitle(this->_window_ptr, this->_title);
+  }
+
   void window::update_surface()
   {
     SDL_UpdateWindowSurface(window_ptr());

@@ -24,6 +24,8 @@ namespace may
     SDL_Surface *surface() const;
     SDL_Renderer *renderer() const;
     SDL_Renderer *accelerated_renderer() const;
+    const char *title() const;
+    void title(const char *__title);
     void update_surface();
     // Operators
     window &operator=(const window &that);

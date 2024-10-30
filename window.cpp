@@ -13,7 +13,7 @@ namespace may
     this->_window_ptr = that._window_ptr;
   }
 
-  window::window(char *title, int width, int height, int x, int y)
+  window::window(const char *title, int width, int height, int x, int y)
   {
     this->_title = title;
     this->_width = width;

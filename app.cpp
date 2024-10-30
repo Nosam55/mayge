@@ -1,16 +1,16 @@
 #include "app.hpp"
 
-const int SCREEN_WIDTH = 1200;
-const int SCREEN_HEIGHT = 900;
-
-double shooter_x = 0.0, shooter_y = 0.0;
-double v_x = 0.0, v_y = 0.0;
-double speed = 175.0;
-double angle = 0.0f;
-
 namespace may
 {
-  app::app() : _window("My App", SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED)
+  app::app() : app(800, 600)
+  {
+  }
+
+  app::app(int width, int height) : app("My App", width, height)
+  {
+  }
+
+  app::app(const char *title, int width, int height) : _window(title, width, height, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED), _bg_img()
   {
     background_color(0xFF, 0xFF, 0xFF, 0xFF);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -29,10 +29,6 @@ namespace may
 
   app::~app()
   {
-    for (may::actor &actor : _actors)
-    {
-      actor.destroy();
-    }
     window().destroy();
     IMG_Quit();
     SDL_Quit();
@@ -94,6 +90,11 @@ namespace may
         SDL_SetRenderDrawColor(renderer, _bgr, _bgg, _bgb, _bga);
         SDL_RenderClear(renderer);
 
+        if (strcmp(_bg_img.title(), "") != 0)
+        {
+          SDL_RenderCopy(renderer, _bg_img.load_texture(renderer), NULL, NULL);
+        }
+
         game_loop(renderer);
 
         SDL_RenderPresent(renderer);
@@ -110,44 +111,6 @@ namespace may
   void app::game_loop(SDL_Renderer *renderer)
   {
     static may::floating_actor player("shooter.png", 100.0, 100.0, 50, 40, 0.0);
-
-    player.input(game_state());
-    player.update(game_state());
-
-    // Window border checking
-    SDL_FPoint player_pos = player.position();
-    player_pos.x = fmodf64(player_pos.x, (double)SCREEN_WIDTH);
-    player_pos.y = fmodf64(player_pos.y, (double)SCREEN_HEIGHT);
-    if (player_pos.x < 0)
-    {
-      player_pos.x = (double)SCREEN_WIDTH - 5.0;
-    }
-    if (player_pos.y < 0)
-    {
-      player_pos.y = (double)SCREEN_HEIGHT - 5.0;
-    }
-    player.position(player_pos);
-    ////////////////////////
-
-    SDL_Rect fillRect = {
-        static_cast<int>(SCREEN_WIDTH / 4),
-        static_cast<int>(SCREEN_HEIGHT / 4),
-        static_cast<int>(SCREEN_WIDTH / 2),
-        static_cast<int>(SCREEN_HEIGHT / 2)};
-
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
-    SDL_RenderFillRect(renderer, &fillRect);
-
-    if (may::colliding(fillRect, player.bounding_box()))
-    {
-      SDL_SetTextureBlendMode(player.image().texture(), SDL_BLENDMODE_MUL);
-    }
-    else
-    {
-      SDL_SetTextureBlendMode(player.image().texture(), SDL_BLENDMODE_BLEND);
-    }
-
-    player.render(renderer);
   }
 
   void app::background_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -156,5 +119,67 @@ namespace may
     _bgg = g;
     _bgb = b;
     _bga = a;
+  }
+
+  void app::background_color(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a) const
+  {
+    *r = _bgr;
+    *g = _bgg;
+    *b = _bgb;
+    *a = _bga;
+  }
+
+  void app::background_image(const char *path)
+  {
+    _bg_img = image::get_image(path);
+  }
+
+  image &app::background_image()
+  {
+    return _bg_img;
+  }
+
+  void app::clamp_on_border(may::actor &actor)
+  {
+    SDL_FPoint position = actor.position();
+
+    if (position.x < 0)
+    {
+      position.x = 0;
+    }
+    else if (position.x > width())
+    {
+      position.x = width();
+    }
+
+    if (position.y < 0)
+    {
+      position.y = 0;
+    }
+    else if (position.y > height())
+    {
+      position.y = height();
+    }
+
+    actor.position(position);
+  }
+
+  void app::loop_on_border(may::actor &actor)
+  {
+    SDL_FPoint position = actor.position();
+
+    position.x = fmodf64(position.x, (double)width());
+    position.y = fmodf64(position.y, (double)height());
+
+    if (position.x < 0)
+    {
+      position.x = (double)width() - 5.0;
+    }
+    if (position.y < 0)
+    {
+      position.y = (double)height() - 5.0;
+    }
+
+    actor.position(position);
   }
 }

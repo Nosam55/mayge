@@ -19,9 +19,10 @@ namespace may
 
   public:
     image();
+    ~image();
     image(const image&) = default;
     image &operator=(const image&) = default;
-    
+
     static image &get_image(const char *path);
     SDL_Surface *load_surface();
     SDL_Texture *load_texture(SDL_Renderer *renderer);

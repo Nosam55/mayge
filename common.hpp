@@ -16,10 +16,12 @@ namespace may
 
   public:
     bool is_key_pressed(SDL_Keycode key) const;
+    bool is_key_set(SDL_Keycode key) const;
     inline double delta_time() const { return _delta_time; }
     void key_down(SDL_Keycode key);
     void key_up(SDL_Keycode key);
     void key_set(SDL_Keycode key);
+    inline uint64_t tick() const { return _last_tick; }
     void tick(uint64_t _tick);
   };
 }

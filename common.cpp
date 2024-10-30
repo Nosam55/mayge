@@ -4,6 +4,11 @@ namespace may
 {
   bool game_state::is_key_pressed(SDL_Keycode key) const
   {
+    return _keys_pressed.count(key);
+  }
+
+  bool game_state::is_key_set(SDL_Keycode key) const
+  {
     return _keys_pressed.count(key) && _keys_pressed.at(key);
   }
 

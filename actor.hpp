@@ -58,6 +58,9 @@ namespace may
     image_actor(const char *image_path, double x, double y, int width, int height, double angle);
     image_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed);
 
+    inline int width() const { return _width; }
+    inline int height() const { return _height; }
+
     may::image &image();
     virtual SDL_Rect bounding_box() const;
     virtual void render(SDL_Renderer *renderer) override;

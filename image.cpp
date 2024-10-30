@@ -18,6 +18,11 @@ namespace may
     this->_renderer = nullptr;
   }
 
+  image::~image()
+  {
+    unload();
+  }
+
   image &image::get_image(const char *path)
   {
     if (_unique_images.count(path) > 0)

@@ -43,6 +43,7 @@ namespace may
 
     virtual void render(SDL_Renderer *renderer) = 0;
     virtual void update(may::game_state &state);
+    virtual void destroy();
   };
 
   class image_actor : public actor
@@ -59,7 +60,8 @@ namespace may
 
     may::image &image();
     virtual SDL_Rect bounding_box() const;
-    void render(SDL_Renderer *renderer) override;
+    virtual void render(SDL_Renderer *renderer) override;
+    virtual void destroy() override;
   };
 
   class simple_actor : public image_actor
@@ -74,6 +76,7 @@ namespace may
   class floating_actor : public image_actor
   {
     double _vx, _vy;
+
   public:
     floating_actor(const char *image_path, int width, int height);
     floating_actor(const char *image_path, double x, double y, int width, int height, double angle);

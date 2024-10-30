@@ -90,6 +90,10 @@ namespace may
   {
   }
 
+  void actor::destroy()
+  {
+  }
+
   image_actor::image_actor(const char *image_path, int width, int height) : image_actor(image_path, 0.0, 0.0, width, height, 0.0)
   {
   }
@@ -98,12 +102,14 @@ namespace may
   {
   }
 
-  image_actor::image_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : _image(image_path), actor(x, y, angle, speed, rot_speed)
+  image_actor::image_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : _image(), actor(x, y, angle, speed, rot_speed)
   {
     this->_width = width;
     this->_height = height;
     this->_pivot_x = width / 2.0;
     this->_pivot_y = height / 2.0;
+
+    this->_image = image::get_image(image_path);
   }
 
   may::image &image_actor::image()
@@ -128,6 +134,20 @@ namespace may
       fprintf(stderr, "Could not render %s: %s\n", image().title(), SDL_GetError());
       exit(EXIT_FAILURE);
     }
+  }
+
+  void image_actor::destroy()
+  {
+    this->_image.unload();
+    this->_angle = 0.0;
+    this->_height = 0;
+    this->_pivot_x = 0.0;
+    this->_pivot_y = 0.0;
+    this->_rot_speed = 0.0;
+    this->_speed = 0.0;
+    this->_width = 0;
+    this->_x = 0.0;
+    this->_y = 0.0;
   }
 
   simple_actor::simple_actor(const char *image_path, int width, int height) : simple_actor(image_path, 0.0, 0.0, width, height, 0.0)

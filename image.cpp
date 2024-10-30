@@ -2,12 +2,33 @@
 
 namespace may
 {
-  image::image(const char *path)
+  std::map<std::string, image> image::_unique_images;
+
+  image::image() : _path("")
   {
-    this->_path = path;
     this->_surface = nullptr;
     this->_texture = nullptr;
     this->_renderer = nullptr;
+  }
+
+  image::image(const char *path) : _path(path)
+  {
+    this->_surface = nullptr;
+    this->_texture = nullptr;
+    this->_renderer = nullptr;
+  }
+
+  image &image::get_image(const char *path)
+  {
+    if (_unique_images.count(path) > 0)
+    {
+      return _unique_images.at(path);
+    }
+    else
+    {
+      _unique_images[path] = image(path);
+      return _unique_images[path];
+    }
   }
 
   SDL_Surface *image::load_surface()
@@ -18,7 +39,7 @@ namespace may
     }
     else
     {
-      _surface = IMG_Load(_path);
+      _surface = IMG_Load(_path.c_str());
       if (_surface == nullptr)
       {
         fprintf(stderr, "Unable to load image %s: %s\n", _path, IMG_GetError());
@@ -37,12 +58,12 @@ namespace may
     }
     else
     {
-      if(_texture)
+      if (_texture)
       {
         SDL_DestroyTexture(_texture);
       }
 
-      _texture = IMG_LoadTexture(renderer, _path);
+      _texture = IMG_LoadTexture(renderer, _path.c_str());
       if (_texture == nullptr)
       {
         fprintf(stderr, "Could not load image texture %s: %s\n", _path, IMG_GetError());
@@ -66,21 +87,20 @@ namespace may
 
   const char *image::title() const
   {
-    return _path;
+    return _path.c_str();
   }
 
   void image::unload()
   {
-    if (_surface)
+    bool is_ref_image = &(_unique_images.at(_path)) == this;
+
+    _surface = nullptr;
+    _texture = nullptr;
+
+    if (is_ref_image)
     {
       SDL_FreeSurface(_surface);
-      _surface = nullptr;
-    }
-
-    if (_texture)
-    {
       SDL_DestroyTexture(_texture);
-      _texture = nullptr;
     }
   }
 }

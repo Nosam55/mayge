@@ -6,6 +6,6 @@ int main(int argc, char **argv)
 
   // Initialize SDL
   may::app app;
-  app.main_loop();
+  app.start();
   return 0;
 }

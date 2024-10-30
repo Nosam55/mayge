@@ -10,8 +10,7 @@ double angle = 0.0f;
 
 namespace may
 {
-  app::app() : _window("My App", SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED),
-               _shooter("shooter.png")
+  app::app() : _window("My App", SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED)
   {
     background_color(0xFF, 0xFF, 0xFF, 0xFF);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -30,7 +29,10 @@ namespace may
 
   app::~app()
   {
-    _shooter.unload();
+    for (may::actor &actor : _actors)
+    {
+      actor.destroy();
+    }
     window().destroy();
     IMG_Quit();
     SDL_Quit();
@@ -65,7 +67,7 @@ namespace may
     return quit;
   }
 
-  void app::main_loop()
+  void app::start()
   {
     try
     {

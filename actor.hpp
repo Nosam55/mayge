@@ -62,6 +62,7 @@ namespace may
     inline int height() const { return _height; }
 
     may::image &image();
+    void image(const char *path);
     virtual SDL_Rect bounding_box() const;
     virtual void render(SDL_Renderer *renderer) override;
     virtual void destroy() override;

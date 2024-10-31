@@ -117,6 +117,11 @@ namespace may
     return _image;
   }
 
+  void image_actor::image(const char *path)
+  {
+    _image = image::get_image(path);
+  }
+
   SDL_Rect image_actor::bounding_box() const
   {
     return {_x, _y, _width, _height};

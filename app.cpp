@@ -2,15 +2,15 @@
 
 namespace may
 {
-  app::app() : app(800, 600)
+  app::app() : app("My App")
   {
   }
 
-  app::app(int width, int height) : app("My App", width, height)
+  app::app(const char *title) : app(title, 800, 600)
   {
   }
 
-  app::app(const char *title, int width, int height) : _window(title, width, height, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED), _bg_img()
+  app::app(const char *title, int width, int height, int x, int y) : _window(title, width, height, x, y), _bg_img()
   {
     background_color(0xFF, 0xFF, 0xFF, 0xFF);
     if (SDL_Init(SDL_INIT_VIDEO) < 0)

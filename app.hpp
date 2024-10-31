@@ -20,8 +20,8 @@ namespace may
 
   public:
     app();
-    app(int width, int height);
-    app(const char *title, int width, int height);
+    app(const char *title);
+    app(const char *title, int width, int height, int x = SDL_WINDOWPOS_CENTERED, int y = SDL_WINDOWPOS_CENTERED);
     ~app();
 
     may::window &window();
@@ -35,8 +35,17 @@ namespace may
     virtual void game_loop(SDL_Renderer *renderer);
     
     inline may::game_state &game_state() { return _game_state; }
-    inline int width() { return _window.width(); }
-    inline int height() { return _window.height(); }
+
+    inline const char *title() const { return _window.title(); }
+    inline void title(const char *__title) { _window.title(__title); }
+    inline int width() const { return _window.width(); }
+    inline int height() const { return _window.height(); }
+    inline void width(int __width) { _window.width(__width); } 
+    inline void height(int __height) { _window.height(__height); } 
+    inline int x() const { return _window.x(); }
+    inline int y() const { return _window.y(); }
+    inline void x(int __x) { _window.x(__x); }
+    inline void y(int __y) { _window.y(__y); }
     void clamp_on_border(may::actor& actor);
     void loop_on_border(may::actor& actor);
   };

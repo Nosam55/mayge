@@ -1,12 +1,12 @@
 #include "app.hpp"
 #include "asteroids_app.hpp"
+#include "cfg_reader.hpp"
 
 int main(int argc, char **argv)
 {
-  SDL_Surface *surface = nullptr;
+  may::cfg_reader config("test.cfg");
 
-  // Initialize SDL
-  may::asteroids_app app;
+  may::app &app = config.app();
   app.start();
   return 0;
 }

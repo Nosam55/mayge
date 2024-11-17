@@ -1,10 +1,137 @@
 #include "common.hpp"
+#include <string>
 
 namespace may
 {
+  actor::actor() : actor(0.0, 0.0, 0.0)
+  {
+  }
+
+  actor::actor(double x, double y, double angle) : actor(x, y, angle, 100, M_PI)
+  {
+  }
+
+  actor::actor(double x, double y, double angle, double speed, double rot_speed)
+  {
+    this->_x = x;
+    this->_y = y;
+    this->_angle = angle;
+    this->_speed = speed;
+    this->_rot_speed = rot_speed;
+
+    char buffer[32];
+    for (size_t i = 0; i < sizeof(buffer) / sizeof(*buffer); ++i)
+    {
+      buffer[i] = (random() & 0xFF) % ('Z' - '0') + '0'; // which characters are eligible for random selection
+    }
+
+    buffer[sizeof(buffer) / sizeof(*buffer) - 1] = 0;
+
+    _tags["id"] = buffer;
+  }
+
+  bool actor::has_tag(const char *key) const
+  {
+    return _tags.count(key) > 0;
+  }
+
+  const std::string &actor::operator[](const char *key) const
+  {
+    return _tags.at(key);
+  }
+
+  std::string &actor::operator[](const char *key)
+  {
+    return _tags[key];
+  }
+
+  bool actor::operator==(const may::actor &that) const
+  {
+    if (this->has_tag("id") && that.has_tag("id"))
+    {
+      return (*this)["id"] == that["id"];
+    }
+    else
+    {
+      return this == &that;
+    }
+  }
+
+  SDL_FPoint actor::position() const
+  {
+    return {_x, _y};
+  }
+
+  void actor::position(SDL_FPoint pos)
+  {
+    _x = pos.x;
+    _y = pos.y;
+  }
+
+  void actor::position(double x, double y)
+  {
+    _x = x;
+    _y = y;
+  }
+
+  double actor::angle() const
+  {
+    return _angle;
+  }
+
+  void actor::angle(double __angle)
+  {
+    _angle = __angle;
+  }
+
+  double actor::speed() const
+  {
+    return _speed;
+  }
+
+  void actor::speed(double __speed)
+  {
+    _speed = __speed;
+  }
+
+  double actor::rot_speed() const
+  {
+    return _rot_speed;
+  }
+
+  void actor::rot_speed(double __rot_speed)
+  {
+    _rot_speed = __rot_speed;
+  }
+
+  void actor::move(double delta_time)
+  {
+    _x += _speed * cos(_angle) * delta_time;
+    _y += _speed * sin(_angle) * delta_time;
+  }
+
+  void actor::move(double x, double y)
+  {
+    _x += x;
+    _y += y;
+  }
+
+  void actor::rotate(double angle)
+  {
+    _angle += angle;
+  }
+
+  void actor::render(SDL_Renderer *renderer)
+  {
+  }
+
+  void actor::destroy()
+  {
+  }
+
   bool game_state::is_key_pressed(SDL_Keycode key) const
   {
-    return _keys_pressed.count(key);
+    return _keys_pressed.count(key) > 0;
   }
 
   bool game_state::is_key_set(SDL_Keycode key) const
@@ -26,6 +153,14 @@ namespace may
   {
     if (_keys_pressed.count(key))
     {
+      _keys_pressed[key] = true;
+    }
+  }
+
+  void game_state::key_unset(SDL_Keycode key)
+  {
+    if (_keys_pressed.count(key))
+    {
       _keys_pressed[key] = false;
     }
   }
@@ -34,6 +169,57 @@ namespace may
   {
     _delta_time = static_cast<double>(_tick - _last_tick) / 1000.0;
     _last_tick = _tick;
+  }
+
+  bool game_state::is_button_pressed(uint8_t button) const
+  {
+    return _mouse_buttons.count(button) > 0;
+  }
+
+  bool game_state::is_button_set(uint8_t button) const
+  {
+    return _mouse_buttons.count(button) > 0 && _mouse_buttons.at(button);
+  }
+
+  void game_state::button_down(uint8_t button)
+  {
+    _mouse_buttons[button] = true;
+  }
+
+  void game_state::button_up(uint8_t button)
+  {
+    _mouse_buttons.erase(button);
+  }
+
+  void game_state::button_set(uint8_t button)
+  {
+    if (_mouse_buttons.count(button) > 0)
+    {
+      _mouse_buttons[button] = true;
+    }
+  }
+
+  void game_state::button_unset(uint8_t button)
+  {
+    if (_mouse_buttons.count(button) > 0)
+    {
+      _mouse_buttons[button] = false;
+    }
+  }
+
+  void game_state::add_actor(may::actor &__actor)
+  {
+    // _actors.push_back(__actor);
+  }
+
+  void game_state::remove_actor(const may::actor &__actor)
+  {
+    // for (auto it = _actors.begin(); it != _actors.end(); it++)
+    // {
+    //   if (*it == __actor)
+    //   {
+    //   }
+    // }
   }
 
   char *copy_string(const char *string)
@@ -52,7 +238,7 @@ namespace may
     return ret;
   }
 
-  bool colliding(SDL_Rect a, SDL_Rect b)
+  bool colliding(SDL_FRect a, SDL_FRect b)
   {
     bool cx = false, cy = false;
     int dx = b.x - a.x,
@@ -77,5 +263,25 @@ namespace may
     }
 
     return cx && cy;
+  }
+
+  bool is_inside(SDL_FPoint pt, SDL_FRect rect)
+  {
+    if (rect.x < pt.x && pt.x < rect.x + rect.w)
+    {
+      return rect.y < pt.y && pt.y < rect.y + rect.h;
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  bool colliding(SDL_Rect a, SDL_Rect b)
+  {
+    SDL_FRect aa = {a.x, a.y, a.w, a.h};
+    SDL_FRect bb = {b.x, b.y, b.w, b.h};
+
+    return colliding(aa, bb);
   }
 }

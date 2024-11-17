@@ -1,4 +1,5 @@
 #include "image.hpp"
+#include <stdexcept>
 
 namespace may
 {
@@ -47,7 +48,7 @@ namespace may
       _surface = IMG_Load(_path.c_str());
       if (_surface == nullptr)
       {
-        fprintf(stderr, "Unable to load image %s: %s\n", _path, IMG_GetError());
+        fprintf(stderr, "Unable to load image %s: %s\n", _path.c_str(), IMG_GetError());
         exit(EXIT_FAILURE);
       }
 
@@ -71,7 +72,7 @@ namespace may
       _texture = IMG_LoadTexture(renderer, _path.c_str());
       if (_texture == nullptr)
       {
-        fprintf(stderr, "Could not load image texture %s: %s\n", _path, IMG_GetError());
+        fprintf(stderr, "Could not load image texture %s: %s\n", _path.c_str(), IMG_GetError());
         exit(EXIT_FAILURE);
       }
 
@@ -106,6 +107,96 @@ namespace may
     {
       SDL_FreeSurface(_surface);
       SDL_DestroyTexture(_texture);
+    }
+  }
+
+  spritesheet::spritesheet() : spritesheet("", 0, 0)
+  {
+  }
+
+  spritesheet::spritesheet(const char *path, int sprite_width, int sprite_height)
+  {
+    this->_sheet = image::get_image(path);
+    this->_sprite_width = sprite_width;
+    this->_sprite_height = sprite_height;
+    this->_columns = 0;
+    this->_rows = 0;
+    this->_sheet_height = 0;
+    this->_sheet_width = 0;
+  }
+
+  void spritesheet::load_sprites(SDL_Renderer *renderer)
+  {
+    SDL_Texture *sheet_texture = _sheet.load_texture(renderer);
+
+    SDL_QueryTexture(sheet_texture, nullptr, nullptr, &_sheet_width, &_sheet_height);
+
+    // Boundary Checking
+    if (_sheet_width % _sprite_width != 0)
+    {
+      throw std::length_error("Spritesheet width is not aligned to sprite width");
+    }
+
+    if (_sheet_height % _sprite_height != 0)
+    {
+      throw std::length_error("Spritesheet height is not aligned to sprite height");
+    }
+    ////////////////////////
+
+    this->_rows = _sheet_height / _sprite_height;
+    this->_columns = _sheet_width / _sprite_width;
+
+    _loaded = true;
+  }
+
+  spritesheet::sprite spritesheet::operator[](unsigned int index) const
+  {
+    SDL_Texture *sheet_texture = _sheet.texture();
+
+    int x = (index % _columns) * _sprite_width;
+    int y = (index / _columns) * _sprite_height;
+
+    if (x > _sheet_width || x < 0)
+    {
+      throw std::out_of_range("Requested sprite was out of range of width of spritesheet");
+    }
+
+    if (y > _sheet_height || y < 0)
+    {
+      throw std::out_of_range("Requested sprite was out of range of width of spritesheet");
+    }
+
+    SDL_Rect clip_rect = {x, y, _sprite_width - 1, _sprite_height - 1};
+
+    return sprite(sheet_texture, clip_rect);
+  }
+
+  spritesheet::sprite::sprite(SDL_Texture *sheet) : sprite(sheet, {0, 0, 0, 0})
+  {
+  }
+
+  spritesheet::sprite::sprite(SDL_Texture *sheet, SDL_Rect clip_rect)
+  {
+    this->_sheet_texture = sheet;
+    this->_clip_rect = clip_rect;
+  }
+
+  void spritesheet::sprite::render(SDL_Renderer *renderer, SDL_Rect *dest_rect, double angle, SDL_Point *center, SDL_RendererFlip flip) const
+  {
+    int err = SDL_RenderCopyEx(renderer, _sheet_texture, &_clip_rect, dest_rect, angle, center, flip);
+    if (err)
+    {
+      fprintf(stderr, "Could not render sprite: %s\n", SDL_GetError());
+      exit(EXIT_FAILURE);
+    }
+  }
+  void spritesheet::sprite::renderF(SDL_Renderer *renderer, SDL_FRect *dest_rect, double angle, SDL_FPoint *center, SDL_RendererFlip flip) const
+  {
+    int err = SDL_RenderCopyExF(renderer, _sheet_texture, &_clip_rect, dest_rect, angle, center, flip);
+    if (err)
+    {
+      fprintf(stderr, "Could not render sprite: %s\n", SDL_GetError());
+      exit(EXIT_FAILURE);
     }
   }
 }

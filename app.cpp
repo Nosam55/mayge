@@ -42,6 +42,7 @@ namespace may
   bool app::process_events()
   {
     bool quit = false;
+    auto &state = game_state();
 
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
@@ -52,28 +53,50 @@ namespace may
       }
       else if (event.type == SDL_KEYDOWN)
       {
-        game_state().key_down(event.key.keysym.sym);
+        state.key_down(event.key.keysym.sym);
       }
       else if (event.type == SDL_KEYUP)
       {
-        game_state().key_up(event.key.keysym.sym);
+        state.key_up(event.key.keysym.sym);
+      }
+      else if (event.type == SDL_MOUSEBUTTONDOWN)
+      {
+        state.button_down(event.button.button);
+        state.mouse_pos(event.button.x, event.button.y);
+      }
+      else if (event.type == SDL_MOUSEBUTTONUP)
+      {
+        state.button_up(event.button.button);
+        state.mouse_pos(event.button.x, event.button.y);
+      }
+      else if (event.type == SDL_MOUSEMOTION)
+      {
+        state.mouse_pos(event.motion.x, event.motion.y);
       }
     }
 
     return quit;
   }
 
+  void app::init()
+  {
+    may::window &window = this->window();
+
+    window.load();
+
+    SDL_Surface *surface = window.surface();
+
+    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0x55, 0x00, 0x55));
+    window.update_surface();
+  }
+
   void app::start()
   {
     try
     {
+      init();
+
       may::window &window = this->window();
-      window.load();
-
-      SDL_Surface *surface = window.surface();
-
-      SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0x55, 0x00, 0x55));
-      window.update_surface();
 
       SDL_Renderer *renderer = window.accelerated_renderer();
 
@@ -102,7 +125,7 @@ namespace may
         game_state().tick(SDL_GetTicks64());
       }
     }
-    catch (may::sdl_exception ex)
+    catch (may::sdl_exception &ex)
     {
       fprintf(stderr, "Caught exception: %s\n", ex.what());
     }
@@ -110,7 +133,6 @@ namespace may
 
   void app::game_loop(SDL_Renderer *renderer)
   {
-    static may::floating_actor player("shooter.png", 100.0, 100.0, 50, 40, 0.0);
   }
 
   void app::background_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)

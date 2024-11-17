@@ -90,6 +90,7 @@ enum READ_STATE
   WINDOW,
   GAME_STATE,
   IMAGE,
+  SPRITESHEET,
   IMAGE_ACTOR,
   SIMPLE_ACTOR,
   FLOATING_ACTOR
@@ -154,6 +155,10 @@ namespace may
         {
           state = IMAGE;
         }
+        else if (stricmp("[SpriteSheet]", strrms(buffer)) == 0)
+        {
+          state = SPRITESHEET;
+        }
         else if (stricmp("[ImageActor]", strrms(buffer)) == 0)
         {
           state = IMAGE_ACTOR;
@@ -170,7 +175,7 @@ namespace may
       }
       case READ_STATE::ASTEROIDS_APP:
       {
-        char * const eq = strchr(buffer, '=');
+        char *const eq = strchr(buffer, '=');
         *eq = 0;
 
         const char *key = strrms(buffer);

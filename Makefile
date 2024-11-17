@@ -11,7 +11,7 @@ release: CXXFLAGS+= -O2
 release: $(ROBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
-debug: CXXFLAGS += -DDEBUG -g
+debug: CXXFLAGS+= -DDEBUG -g
 debug: $(DOBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
@@ -24,7 +24,9 @@ remake: clean all
 
 all: release debug
 
+
 clean:
 	[ -f debug ] && rm debug || :;
 	[ -f release ] && rm release || :;
-	[ -d obj/ ] && rm -r obj/debug/* && rm -r obj/release/* || :;
+	[ -d obj/debug/ ] && rm -r obj/debug/*
+	[ -d obj/release/ ] && rm -r obj/release/* || :;

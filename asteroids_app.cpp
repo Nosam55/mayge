@@ -10,7 +10,7 @@ namespace may
   {
   }
 
-  asteroids_app::asteroids_app(const char *title, int width, int height) : app(title, width, height), player("shooter.png", 50, 40)
+  asteroids_app::asteroids_app(const char *title, int width, int height) : app(title, width, height)
   {
     background_color(0, 0, 0, 1);
     bullet_image("bullet.png");
@@ -30,7 +30,7 @@ namespace may
         _bullets.erase(_bullets.begin());
       }
 
-      game_state().key_set(SDLK_SPACE);
+      game_state().key_unset(SDLK_SPACE);
     }
 
     player.input(game_state());

@@ -16,7 +16,6 @@ namespace may
     may::app *_app;
     std::vector<may::image> _images;
     std::vector<may::image_actor> _image_actors;
-    std::vector<may::simple_actor> _simple_actors;
     std::vector<may::floating_actor> _floating_actors;
     void load_data();
   public:

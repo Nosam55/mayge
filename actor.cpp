@@ -1,99 +1,7 @@
 #include "actor.hpp"
+
 namespace may
 {
-  actor::actor() : actor(0.0, 0.0, 0.0)
-  {
-  }
-
-  actor::actor(double x, double y, double angle) : actor(x, y, angle, 100, M_PI)
-  {
-  }
-
-  actor::actor(double x, double y, double angle, double speed, double rot_speed)
-  {
-    this->_x = x;
-    this->_y = y;
-    this->_angle = angle;
-    this->_speed = speed;
-    this->_rot_speed = rot_speed;
-  }
-
-  SDL_FPoint actor::position() const
-  {
-    return {_x, _y};
-  }
-
-  void actor::position(SDL_FPoint pos)
-  {
-    _x = pos.x;
-    _y = pos.y;
-  }
-
-  void actor::position(double x, double y)
-  {
-    _x = x;
-    _y = y;
-  }
-
-  double actor::angle() const
-  {
-    return _angle;
-  }
-
-  void actor::angle(double __angle)
-  {
-    _angle = __angle;
-  }
-
-  double actor::speed() const
-  {
-    return _speed;
-  }
-
-  void actor::speed(double __speed)
-  {
-    _speed = __speed;
-  }
-
-  double actor::rot_speed() const
-  {
-    return _rot_speed;
-  }
-
-  void actor::rot_speed(double __rot_speed)
-  {
-    _rot_speed = __rot_speed;
-  }
-
-  void actor::move(double delta_time)
-  {
-    _x += _speed * cos(_angle) * delta_time;
-    _y += _speed * sin(_angle) * delta_time;
-  }
-
-  void actor::move(double x, double y)
-  {
-    _x += x;
-    _y += y;
-  }
-
-  void actor::rotate(double angle)
-  {
-    _angle += angle;
-  }
-
-  void actor::input(may::game_state &state)
-  {
-  }
-
-  void actor::update(may::game_state &state)
-  {
-  }
-
-  void actor::destroy()
-  {
-  }
-
   image_actor::image_actor(const char *image_path, int width, int height) : image_actor(image_path, 0.0, 0.0, width, height, 0.0)
   {
   }
@@ -122,15 +30,15 @@ namespace may
     _image = image::get_image(path);
   }
 
-  SDL_Rect image_actor::bounding_box() const
+  SDL_FRect image_actor::bounding_box() const
   {
-    return {_x, _y, _width, _height};
+    return {_x, _y, static_cast<double>(_width), static_cast<double>(_height)};
   }
 
   void image_actor::render(SDL_Renderer *renderer)
   {
     SDL_Texture *texture = _image.load_texture(renderer);
-    SDL_FRect dest = {_x, _y, static_cast<double>(_width), static_cast<double>(_height)};
+    SDL_FRect dest = bounding_box();
     SDL_FPoint pivot = {_pivot_x, _pivot_y};
 
     int err = SDL_RenderCopyExF(renderer, texture, nullptr, &dest, _angle * 180 * M_1_PI, &pivot, SDL_FLIP_NONE);
@@ -155,47 +63,77 @@ namespace may
     this->_y = 0.0;
   }
 
-  simple_actor::simple_actor(const char *image_path, int width, int height) : simple_actor(image_path, 0.0, 0.0, width, height, 0.0)
+  animated_actor::animated_actor(const may::spritesheet &sheet, int width, int height, double fps) : animated_actor(sheet, 0.0, 0.0, width, height, 0.0, fps)
   {
   }
 
-  simple_actor::simple_actor(const char *image_path, double x, double y, int width, int height, double angle) : simple_actor(image_path, x, y, width, height, angle, 100, M_PI)
+  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps) : animated_actor(sheet, x, y, width, height, angle, fps, 0.0, 0.0)
   {
   }
 
-  simple_actor::simple_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : image_actor(image_path, x, y, width, height, angle, speed, rot_speed)
+  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps, double speed, double rot_speed) : actor(x, y, angle, speed, rot_speed), _sheet(sheet), _sprite_itr(sheet.looping_iterator())
   {
+    this->_width = width;
+    this->_height = height;
+
+    this->_fps = fps;
+    this->_next_frame_tick = 0;
+
+    this->_pivot_x = width / 2.0;
+    this->_pivot_y = height / 2.0;
   }
 
-  void simple_actor::input(may::game_state &state)
+  SDL_FRect animated_actor::bounding_box() const
   {
-    if (state.is_key_pressed(SDLK_UP))
+    return {this->_x, this->_y, static_cast<double>(this->_width), static_cast<double>(this->_height)};
+  }
+
+  void animated_actor::update(may::game_state &state)
+  {
+    if (_fps != 0.0 && state.tick() >= _next_frame_tick)
     {
-      _y -= _speed * state.delta_time();
-    }
-    if (state.is_key_pressed(SDLK_DOWN))
-    {
-      _y += _speed * state.delta_time();
-    }
-    if (state.is_key_pressed(SDLK_LEFT))
-    {
-      _x -= _speed * state.delta_time();
-    }
-    if (state.is_key_pressed(SDLK_RIGHT))
-    {
-      _x += _speed * state.delta_time();
+      if (_next_frame_tick != 0)
+      {
+        ++_sprite_itr;
+      }
+      _next_frame_tick = state.tick() + static_cast<uint64_t>(1000 / _fps);
     }
   }
 
-  floating_actor::floating_actor(const char *image_path, int width, int height) : floating_actor(image_path, 0.0, 0.0, width, height, 0.0)
+  void animated_actor::render(SDL_Renderer *renderer)
+  {
+    if (!_sheet)
+    {
+      _sheet.load_sprites(renderer);
+      _sprite_itr = _sheet.looping_iterator();
+    }
+
+    SDL_FRect dest = bounding_box();
+    SDL_FPoint center = {_pivot_x, _pivot_y};
+
+    auto sprite = *_sprite_itr;
+    sprite.renderF(renderer, &dest, _angle * 180 / M_PI, &center, SDL_FLIP_NONE);
+  }
+
+  void animated_actor::destroy()
   {
   }
 
-  floating_actor::floating_actor(const char *image_path, double x, double y, int width, int height, double angle) : floating_actor(image_path, x, y, width, height, angle, 100, M_PI)
+  floating_actor::floating_actor() : floating_actor(0.0, 0.0, 0.0)
   {
   }
 
-  floating_actor::floating_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : image_actor(image_path, x, y, width, height, angle, speed, rot_speed)
+  floating_actor::floating_actor(const playable_actor &that) : playable_actor(that)
+  {
+    this->_vx = 0.0;
+    this->_vy = 0.0;
+  }
+
+  floating_actor::floating_actor(double x, double y, double angle) : floating_actor(x, y, angle, 100, M_PI)
+  {
+  }
+
+  floating_actor::floating_actor(double x, double y, double angle, double speed, double rot_speed) : playable_actor(x, y, angle, speed, rot_speed)
   {
     this->_vx = 0.0;
     this->_vy = 0.0;
@@ -229,13 +167,6 @@ namespace may
     {
       rotate(_rot_speed * state.delta_time());
     }
-  }
-
-  void floating_actor::render(SDL_Renderer *renderer)
-  {
-    this->image_actor::render(renderer);
-    SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, 0xFF);
-    SDL_RenderDrawLineF(renderer, static_cast<float>(_x + _width / 2.0), static_cast<float>(_y + _height / 2.0), static_cast<float>(_x + _vx / 4.0 + _width / 2.0), static_cast<float>(_y + _vy / 4.0 + _height / 2.0));
   }
 
   SDL_FPoint floating_actor::velocity() const

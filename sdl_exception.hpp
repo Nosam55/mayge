@@ -25,6 +25,7 @@ namespace may {
       size_t len = std::strlen(that.msg);
       this->msg = new char[len];
       std::strncpy(this->msg, that.msg, len);
+      return *this;
     }
     const char *what() {
       return this->msg;

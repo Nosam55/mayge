@@ -7,7 +7,13 @@ namespace may
 {
   class asteroids_app : public app
   {
-    floating_actor player;
+    class player_t : public image_actor, public floating_actor
+    {
+    public:
+      player_t() : image_actor("shooter.png", 100.0, 100.0, 100, 80, 0.0, 100.0, M_PI) {}
+    };
+
+    player_t player;
     std::string _bullet_image;
     std::list<image_actor> _bullets;
 

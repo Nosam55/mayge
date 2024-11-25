@@ -277,6 +277,16 @@ namespace may
     }
   }
 
+  SDL_Rect scale_by(SDL_Rect rect, int px)
+  {
+    return SDL_Rect{rect.x - px, rect.y - px, rect.w + 2 * px, rect.h + 2 * px};
+  }
+
+  SDL_FRect scale_by(SDL_FRect rect, float px)
+  {
+    return SDL_FRect{rect.x - px, rect.y - px, rect.w + 2.0f * px, rect.h + 2.0f * px};
+  }
+
   bool colliding(SDL_Rect a, SDL_Rect b)
   {
     SDL_FRect aa = {a.x, a.y, a.w, a.h};

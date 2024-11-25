@@ -32,9 +32,23 @@ namespace may
     }
     else
     {
-      _unique_images[path] = image(path);
+      if (path == nullptr)
+      {
+        _unique_images[path] = empty_image();
+      }
+      else
+      {
+        _unique_images[path] = image(path);
+      }
+
       return _unique_images[path];
     }
+  }
+
+  image image::empty_image()
+  {
+    image null_img("MAY NULL IMAGE");
+    null_img._surface = SDL_CreateRGBSurface(0, 1, 1, 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
   }
 
   SDL_Surface *image::load_surface()
@@ -69,11 +83,23 @@ namespace may
         SDL_DestroyTexture(_texture);
       }
 
-      _texture = IMG_LoadTexture(renderer, _path.c_str());
-      if (_texture == nullptr)
+      if (_surface)
       {
-        fprintf(stderr, "Could not load image texture %s: %s\n", _path.c_str(), IMG_GetError());
-        exit(EXIT_FAILURE);
+        _texture = SDL_CreateTextureFromSurface(renderer, _surface);
+        if (_texture == nullptr)
+        {
+          fprintf(stderr, "Could not load image texture %s from existing surface: %s\n", _path.c_str(), SDL_GetError());
+          exit(EXIT_FAILURE);
+        }
+      }
+      else
+      {
+        _texture = IMG_LoadTexture(renderer, _path.c_str());
+        if (_texture == nullptr)
+        {
+          fprintf(stderr, "Could not load image texture %s: %s\n", _path.c_str(), IMG_GetError());
+          exit(EXIT_FAILURE);
+        }
       }
 
       _renderer = renderer;
@@ -100,14 +126,14 @@ namespace may
   {
     bool is_ref_image = &(_unique_images.at(_path)) == this;
 
-    _surface = nullptr;
-    _texture = nullptr;
-
     if (is_ref_image)
     {
       SDL_FreeSurface(_surface);
       SDL_DestroyTexture(_texture);
     }
+
+    _surface = nullptr;
+    _texture = nullptr;
   }
 
   spritesheet::spritesheet() : spritesheet("", 0, 0)

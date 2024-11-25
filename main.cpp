@@ -1,12 +1,13 @@
 #include "app.hpp"
 #include "asteroids_app.hpp"
 #include "cfg_reader.hpp"
+#include "gui.hpp"
 
 class myactor : public may::animated_actor, public may::floating_actor
 {
 
 public:
-  myactor() : may::animated_actor(may::spritesheet("orb_sprites.png", 32, 32), 0.0, 0.0, 64, 64, 0.0, 8.0, 32, M_PI)
+  myactor() : may::actor(80, 80, 0, 64, M_PI), may::animated_actor(may::spritesheet("orb_sprites.png", 32, 32), 64, 64, 8.0)
   {
   }
 
@@ -43,24 +44,86 @@ public:
   }
 };
 
+class clicker : virtual public may::button
+{
+  int _increment;
+
+public:
+  clicker(int increment, SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(width, height), may::button(color, x, y, width, height)
+  {
+    this->_increment = increment;
+  }
+  
+  virtual void on_click(may::game_state &state) override
+  {
+    SDL_Color bg = _bg_color;
+
+    bg.r += _increment;
+    if (bg.r <= _bg_color.r)
+    {
+      bg.g += _increment;
+      if (bg.g <= _bg_color.g)
+      {
+        bg.b += _increment;
+      }
+    }
+
+    bg_color(bg.r, bg.g, bg.b, bg.a);
+    button::on_click(state);
+  }
+
+  virtual void render(SDL_Renderer *renderer) override
+  {
+    int inc = 2;
+    if (is_clicked())
+    {
+      position(_x + inc, _y + inc);
+      _width -= 2 * inc;
+      _height -= 2 * inc;
+
+      pane::render(renderer);
+
+      position(_x - inc, _y - inc);
+      _width += 2 * inc;
+      _height += 2 * inc;
+    }
+    else if (is_hovered())
+    {
+      position(_x - inc / 2, _y - inc / 2);
+      _width += inc;
+      _height += inc;
+
+      pane::render(renderer);
+
+      position(_x + inc / 2, _y + inc / 2);
+      _width -= inc;
+      _height -= inc;
+    }
+    else
+    {
+      pane::render(renderer);
+    }
+  }
+};
+
 class testapp : public may::app
 {
-  myactor actor;
-  may::image_actor portal;
   SDL_Cursor *_cursor;
+  clicker _clicker;
 
 public:
   testapp() : testapp("Title") {}
   testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), portal("bullet.png", 100, 100)
+  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), _clicker(8, SDL_Color{0x00, 0x00, 0x00, 0x88}, 0, 0, 200, 200)
   {
-    background_color(0xFF, 0x88, 0xFF, 0xFF);
-    portal.position(550, 400);
+    background_color(0xEE, 0xEE, 0xEE, 0xFF);
+    _clicker.position(width() / 2.0 - _clicker.width() / 2.0, height() / 2.0 - _clicker.width() / 2.0);
   }
 
   ~testapp()
   {
-    SDL_FreeCursor(_cursor);
+    if (_cursor)
+      SDL_FreeCursor(_cursor);
     _cursor = nullptr;
   }
 
@@ -77,39 +140,23 @@ public:
 
     _cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
     SDL_SetCursor(_cursor);
+
+    SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
   }
 
   void game_loop(SDL_Renderer *renderer) override
   {
     auto &state = game_state();
 
-    SDL_FPoint pos = actor.position();
-    actor.input(state);
-    actor.update(state);
-    actor.render(renderer);
+    // SDL_FPoint pos = actor.position();
+    // actor.input(state);
+    // actor.update(state);
+    // actor.render(renderer);
 
-    portal.render(renderer);
+    _clicker.update(state);
+    _clicker.render(renderer);
 
-    if (may::colliding(actor.bounding_box(), portal.bounding_box()))
-    {
-      actor.position(0, 0);
-    }
-
-    SDL_Point mpos = state.mouse_pos();
-    int size = 75;
-    SDL_Rect box{mpos.x - size / 2, mpos.y - size / 2, size, size};
-    SDL_RenderDrawRect(renderer, &box);
-
-    if (state.is_button_pressed(SDL_BUTTON_LEFT))
-    {
-      SDL_SetRenderDrawColor(renderer, 0xFF, 0x88, 0x88, 0xFF);
-      SDL_RenderFillRect(renderer, &box);
-    }
-    else if (state.is_button_pressed(SDL_BUTTON_RIGHT))
-    {
-      SDL_SetRenderDrawColor(renderer, 0x88, 0x44, 0x44, 0xFF);
-      SDL_RenderFillRect(renderer, &box);
-    }
+    // this->loop_on_border(actor);
   }
 };
 

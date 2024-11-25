@@ -25,6 +25,7 @@ namespace may
     image &operator=(const image &) = default;
 
     static image &get_image(const char *path);
+    static image empty_image();
     SDL_Surface *load_surface();
     SDL_Texture *load_texture(SDL_Renderer *renderer);
     SDL_Surface *surface() const;

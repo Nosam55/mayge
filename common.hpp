@@ -17,6 +17,8 @@ namespace may
   bool colliding(SDL_Rect a, SDL_Rect b);
   bool colliding(SDL_FRect a, SDL_FRect b);
   bool is_inside(SDL_FPoint pt, SDL_FRect rect);
+  SDL_Rect scale_by(SDL_Rect rect, int px);
+  SDL_FRect scale_by(SDL_FRect rect, float px);
 
   class game_state; // Forward declaration of may::game_state for actor::update method
   class actor
@@ -33,7 +35,8 @@ namespace may
     actor(double x, double y, double angle);
     actor(double x, double y, double angle, double speed, double rot_speed);
     actor &operator=(const actor &) = default;
-
+    virtual ~actor() = default;
+    
     bool has_tag(const char *key) const;
     const std::string &operator[](const char *key) const;
     std::string &operator[](const char *key);
@@ -70,7 +73,7 @@ namespace may
 
     double _delta_time;
     uint64_t _last_tick;
-    
+
   public:
     bool is_key_pressed(SDL_Keycode key) const;
     bool is_key_set(SDL_Keycode key) const;
@@ -86,9 +89,10 @@ namespace may
     void tick(uint64_t _tick);
 
     inline SDL_Point mouse_pos() const { return _mouse_pos; }
+    inline SDL_FPoint mouse_posF() const { return {_mouse_pos.x, _mouse_pos.y}; }
     inline void mouse_pos(int x, int y) { _mouse_pos = {x, y}; }
 
-    bool is_button_pressed(uint8_t button) const; 
+    bool is_button_pressed(uint8_t button) const;
     bool is_button_set(uint8_t button) const;
 
     void button_down(uint8_t button);

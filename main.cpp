@@ -46,54 +46,45 @@ public:
 
 class clicker : virtual public may::button
 {
-  int _increment;
+  bool _highlighted;
 
 public:
-  clicker(int increment, SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(width, height), may::button(color, x, y, width, height)
+  clicker(SDL_Color color, double x, double y) : clicker(color, x, y, 100, 100) {}
+  clicker(SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(width, height), may::button(color, x, y, width, height)
   {
-    this->_increment = increment;
+    _highlighted = false;
   }
-  
-  virtual void on_click(may::game_state &state) override
-  {
-    SDL_Color bg = _bg_color;
 
-    bg.r += _increment;
-    if (bg.r <= _bg_color.r)
-    {
-      bg.g += _increment;
-      if (bg.g <= _bg_color.g)
-      {
-        bg.b += _increment;
-      }
-    }
-
-    bg_color(bg.r, bg.g, bg.b, bg.a);
-    button::on_click(state);
-  }
+  inline bool highlighted() const { return _highlighted; }
+  inline void highlighted(bool __x) { _highlighted = __x; }
 
   virtual void render(SDL_Renderer *renderer) override
   {
     int inc = 2;
+    if (highlighted())
+    {
+      inc *= 4;
+    }
+
     if (is_clicked())
     {
       position(_x + inc, _y + inc);
       _width -= 2 * inc;
       _height -= 2 * inc;
 
-      pane::render(renderer);
+      button::render(renderer);
 
       position(_x - inc, _y - inc);
       _width += 2 * inc;
       _height += 2 * inc;
     }
-    else if (is_hovered())
+    else if (highlighted() || is_hovered())
     {
       position(_x - inc / 2, _y - inc / 2);
       _width += inc;
       _height += inc;
 
-      pane::render(renderer);
+      button::render(renderer);
 
       position(_x + inc / 2, _y + inc / 2);
       _width -= inc;
@@ -101,23 +92,37 @@ public:
     }
     else
     {
-      pane::render(renderer);
+      button::render(renderer);
     }
   }
 };
 
 class testapp : public may::app
 {
+  static const size_t NUM_ROWS = 4;
+  static const size_t NUM_CLICKERS = 16;
+  static const size_t CLICKER_SIZE = 100;
+
   SDL_Cursor *_cursor;
-  clicker _clicker;
+  clicker *_clickers[NUM_CLICKERS];
+  std::vector<size_t> _game_order;
+  std::vector<size_t> _input_order;
+
+  std::vector<size_t>::iterator _highlighted;
+  uint64_t _timer;
+  bool _my_turn;
+  bool _lose;
 
 public:
   testapp() : testapp("Title") {}
   testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), _clicker(8, SDL_Color{0x00, 0x00, 0x00, 0x88}, 0, 0, 200, 200)
+  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr)
   {
-    background_color(0xEE, 0xEE, 0xEE, 0xFF);
-    _clicker.position(width() / 2.0 - _clicker.width() / 2.0, height() / 2.0 - _clicker.width() / 2.0);
+    background_color(0x22, 0x22, 0x22, 0xFF);
+    _lose = false;
+    _my_turn = true;
+    _highlighted = _game_order.end();
+    _timer = 0;
   }
 
   ~testapp()
@@ -125,6 +130,12 @@ public:
     if (_cursor)
       SDL_FreeCursor(_cursor);
     _cursor = nullptr;
+
+    for (size_t i = 0; i < NUM_CLICKERS; ++i)
+    {
+      if (_clickers[i])
+        delete _clickers[i];
+    }
   }
 
   virtual void init() override
@@ -142,20 +153,99 @@ public:
     SDL_SetCursor(_cursor);
 
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
+
+    int gap_w = (width() - CLICKER_SIZE * NUM_CLICKERS / NUM_ROWS) / (NUM_CLICKERS / NUM_ROWS + 1);
+    int gap_h = (height() - CLICKER_SIZE * NUM_ROWS) / (NUM_ROWS + 1);
+
+    for (size_t r = 0; r < NUM_ROWS; ++r)
+    {
+      for (size_t c = 0; c < NUM_CLICKERS / NUM_ROWS; ++c)
+      {
+        clicker *new_clicker = new clicker(
+            SDL_Color{rand() & 0xFF, rand() & 0xFF, rand() & 0xFF, 0xAA},
+            gap_w + c * (CLICKER_SIZE + gap_w),
+            gap_h + r * (CLICKER_SIZE + gap_h),
+            CLICKER_SIZE,
+            CLICKER_SIZE);
+
+        _clickers[r * NUM_CLICKERS / NUM_ROWS + c] = new_clicker;
+      }
+    }
   }
 
   void game_loop(SDL_Renderer *renderer) override
   {
     auto &state = game_state();
 
-    // SDL_FPoint pos = actor.position();
-    // actor.input(state);
-    // actor.update(state);
-    // actor.render(renderer);
+    for (size_t i = 0; i < NUM_CLICKERS; ++i)
+    {
+      clicker *c = _clickers[i];
+      c->update(state);
+      c->render(renderer);
+    }
 
-    _clicker.update(state);
-    _clicker.render(renderer);
+    if (_lose)
+    {
+      SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0x7F);
+      SDL_RenderFillRect(renderer, nullptr);
+      return;
+    }
 
+    if (_my_turn)
+    {
+
+      SDL_RenderPresent(renderer);
+      _timer = SDL_GetTicks64() + 1000;
+      while (SDL_GetTicks64() < _timer)
+      {
+      }
+      state.tick(SDL_GetTicks64());
+
+      _game_order.push_back(rand() % NUM_CLICKERS);
+
+      _highlighted = _game_order.begin();
+      _clickers[*_highlighted]->highlighted(true);
+      _timer = state.tick() + 1000;
+
+      _my_turn = false;
+    }
+    else if (_highlighted != _game_order.end())
+    {
+      if (state.tick() >= _timer)
+      {
+        _timer = state.tick() + 1000;
+        _clickers[*_highlighted]->highlighted(false);
+        ++_highlighted;
+
+        if (_highlighted != _game_order.end())
+        {
+          _clickers[*_highlighted]->highlighted(true);
+        }
+      }
+    }
+    else
+    {
+      for (size_t i = 0; i < NUM_CLICKERS; ++i)
+      {
+        clicker *c = _clickers[i];
+        if (c->is_clicked() && !c->is_held())
+        {
+          _input_order.push_back(i);
+          if (_game_order.at(_input_order.size() - 1) != i)
+          {
+            _lose = true;
+          }
+          else
+          {
+            if (_game_order.size() == _input_order.size())
+            {
+              _input_order.clear();
+              _my_turn = true;
+            }
+          }
+        }
+      }
+    }
     // this->loop_on_border(actor);
   }
 };

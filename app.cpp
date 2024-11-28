@@ -25,6 +25,14 @@ namespace may
       fprintf(stderr, "Error initializing SDL_image: %s\n", IMG_GetError());
       exit(EXIT_FAILURE);
     }
+
+    SDL_version compiled;
+    SDL_version linked;
+    SDL_VERSION(&compiled);
+    SDL_GetVersion(&linked);
+
+    printf("Compiled with SDL %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL %d.%d.%d\n", linked.major, linked.minor, linked.patch);
   }
 
   app::~app()
@@ -190,8 +198,8 @@ namespace may
   {
     SDL_FPoint position = actor.position();
 
-    position.x = fmodf64(position.x, (double)width());
-    position.y = fmodf64(position.y, (double)height());
+    position.x = fmodf(position.x, (double)width());
+    position.y = fmodf(position.y, (double)height());
 
     if (position.x < 0)
     {

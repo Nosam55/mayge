@@ -1,9 +1,12 @@
+INCLUDES=include
 CXX=g++
-CXXFLAGS=-w -Wall -Wextra
+CXXFLAGS=-w -Wall -Wextra -I$(INCLUDES)
 LDFLAGS=-lSDL2 -lSDL2_image
 OBJS=common.o image.o actor.o gui.o window.o app.o asteroids_app.o cfg_reader.o main.o
 DOBJS=$(addprefix obj/debug/, $(OBJS))
 ROBJS=$(addprefix obj/release/, $(OBJS))
+WDOBJS=$(addprefix wobj/debug/, $(OBJS))
+WROBJS=$(addprefix wobj/release/, $(OBJS))
 
 .PHONY: clean remake all
 
@@ -15,10 +18,21 @@ debug: CXXFLAGS+= -DDEBUG -g
 debug: $(DOBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
+windows-debug: CXX = x86_64-w64-mingw32-g++
+windows-debug: INCLUDES = winclude
+windows-debug: LDFLAGS := -Lwlib -lmingw32 -lSDL2main $(LDFLAGS)
+windows-debug: debug
+
 obj/release/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 obj/debug/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+wobj/release/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+wobj/debug/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+
 
 remake: clean all
 

@@ -63,6 +63,8 @@ namespace may
     {
       this->bg_color(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
       this->_clicked = false;
+      this->_hovered = false;
+      this->_held = false;
       this->_on_click = nullptr;
     }
 
@@ -71,6 +73,8 @@ namespace may
     virtual void bg_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
     virtual void update(game_state &state) override;
     virtual void render(SDL_Renderer *renderer) override;
+
+    void unclick(bool unhover = false);
     inline bool is_clicked() const { return _clicked; }
     inline bool is_held() const { return _held; }
     inline bool is_hovered() const { return _hovered; }

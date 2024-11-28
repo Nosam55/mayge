@@ -141,6 +141,16 @@ namespace may
     pane::render(renderer);
   }
 
+  void button::unclick(bool unhover)
+  {
+    _clicked = false;
+    _held = false;
+    if (unhover)
+    {
+      _hovered = false;
+    }
+  }
+
   void button::on_click(void (*func)(game_state &))
   {
     _on_click = func;

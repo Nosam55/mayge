@@ -3,98 +3,101 @@
 #include <cstring>
 #include <algorithm>
 #include <string>
-
-int stricmp(const char *a, const char *b, size_t n = 0xFFFFFFFF)
+namespace may
 {
-  size_t i;
-  int cmp_val = 0;
-  for (i = 0; a[i] != 0 && b[i] != 0 && i < n; ++i)
+  int stricmp(const char *a, const char *b, size_t n = 0xFFFFFFFF)
   {
-    if (toupper(a[i]) > toupper(b[i]))
+    size_t i;
+    int cmp_val = 0;
+    for (i = 0; a[i] != 0 && b[i] != 0 && i < n; ++i)
+    {
+      if (toupper(a[i]) > toupper(b[i]))
+      {
+        return 1;
+      }
+      else if (toupper(a[i] < toupper(b[i])))
+      {
+        return -1;
+      }
+    }
+    if (a[i] > b[i])
     {
       return 1;
     }
-    else if (toupper(a[i] < toupper(b[i])))
+    else if (a[i] < b[i])
     {
       return -1;
     }
-  }
-  if (a[i] > b[i])
-  {
-    return 1;
-  }
-  else if (a[i] < b[i])
-  {
-    return -1;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-const char *strrms(const char *a)
-{
-  static std::string _str;
-
-  _str.clear();
-  for (a; *a != 0; ++a)
-  {
-    if (!isspace(*a))
+    else
     {
-      _str += *a;
+      return 0;
     }
   }
 
-  return _str.c_str();
-}
-
-const char *strrip(const char *a)
-{
-  static std::string _str;
-
-  _str.clear();
-
-  for (a; *a && isspace(*a); ++a)
+  const char *strrms(const char *a)
   {
-  }
+    static std::string _str;
 
-  while (*a)
-  {
-    for (a; *a && !isspace(*a); ++a)
+    _str.clear();
+    for (a; *a != 0; ++a)
     {
-      _str += *a;
-    }
-
-    if (*a && isspace(*a))
-    {
-      std::string spaces;
-      for (a; *a && isspace(*a); ++a)
+      if (!isspace(*a))
       {
-        spaces += *a;
-      }
-      if (*a)
-      {
-        _str += spaces;
+        _str += *a;
       }
     }
+
+    return _str.c_str();
   }
 
-  return _str.c_str();
+  const char *strrip(const char *a)
+  {
+    static std::string _str;
+
+    _str.clear();
+
+    for (a; *a && isspace(*a); ++a)
+    {
+    }
+
+    while (*a)
+    {
+      for (a; *a && !isspace(*a); ++a)
+      {
+        _str += *a;
+      }
+
+      if (*a && isspace(*a))
+      {
+        std::string spaces;
+        for (a; *a && isspace(*a); ++a)
+        {
+          spaces += *a;
+        }
+        if (*a)
+        {
+          _str += spaces;
+        }
+      }
+    }
+
+    return _str.c_str();
+  }
+  enum READ_STATE
+  {
+    INIT,
+    APP,
+    ASTEROIDS_APP,
+    WINDOW,
+    GAME_STATE,
+    IMAGE,
+    SPRITESHEET,
+    IMAGE_ACTOR,
+    SIMPLE_ACTOR,
+    FLOATING_ACTOR
+  };
 }
-enum READ_STATE
-{
-  INIT,
-  APP,
-  ASTEROIDS_APP,
-  WINDOW,
-  GAME_STATE,
-  IMAGE,
-  SPRITESHEET,
-  IMAGE_ACTOR,
-  SIMPLE_ACTOR,
-  FLOATING_ACTOR
-};
+
 namespace may
 {
   void cfg_reader::load_data()

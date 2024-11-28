@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <cmath>
 
 inline SDL_Point operator+(const SDL_Point &a, const SDL_Point &b) { return {a.x + b.x, a.y + b.y}; }
 inline SDL_FPoint operator+(const SDL_FPoint &a, const SDL_FPoint &b) { return {a.x + b.x, a.y + b.y}; }

@@ -3,6 +3,8 @@
 #include "cfg_reader.hpp"
 #include "gui.hpp"
 
+#include <ctime>
+
 class myactor : public may::animated_actor, public may::floating_actor
 {
 
@@ -50,7 +52,7 @@ class clicker : virtual public may::button
 
 public:
   clicker(SDL_Color color, double x, double y) : clicker(color, x, y, 100, 100) {}
-  clicker(SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(width, height), may::button(color, x, y, width, height)
+  clicker(SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(color, x, y, width, height), may::button(color, x, y, width, height)
   {
     _highlighted = false;
   }
@@ -99,8 +101,8 @@ public:
 
 class testapp : public may::app
 {
-  static const size_t NUM_ROWS = 4;
-  static const size_t NUM_CLICKERS = 16;
+  static const size_t NUM_ROWS = 5;
+  static const size_t NUM_CLICKERS = 25;
   static const size_t CLICKER_SIZE = 100;
 
   SDL_Cursor *_cursor;
@@ -113,10 +115,13 @@ class testapp : public may::app
   bool _my_turn;
   bool _lose;
 
+  may::font my_font;
+  may::gtext my_text;
+
 public:
   testapp() : testapp("Title") {}
   testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr)
+  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 24)
   {
     background_color(0x22, 0x22, 0x22, 0xFF);
     _lose = false;
@@ -152,11 +157,15 @@ public:
     _cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
     SDL_SetCursor(_cursor);
 
+    my_text.font(my_font.ttf_font());
+    my_text.text("Sphinx of black quartz, judge my vow.");
+
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
 
     int gap_w = (width() - CLICKER_SIZE * NUM_CLICKERS / NUM_ROWS) / (NUM_CLICKERS / NUM_ROWS + 1);
     int gap_h = (height() - CLICKER_SIZE * NUM_ROWS) / (NUM_ROWS + 1);
 
+    srand(time(nullptr));
     for (size_t r = 0; r < NUM_ROWS; ++r)
     {
       for (size_t c = 0; c < NUM_CLICKERS / NUM_ROWS; ++c)
@@ -167,6 +176,11 @@ public:
             gap_h + r * (CLICKER_SIZE + gap_h),
             CLICKER_SIZE,
             CLICKER_SIZE);
+
+        new_clicker->text().text("This is my coordinate: (" + std::to_string(r + 1) + ", " + std::to_string(c + 1) + ")");
+        new_clicker->text().font(my_font.ttf_font());
+        new_clicker->text().load(nullptr);
+        new_clicker->center_text();
 
         _clickers[r * NUM_CLICKERS / NUM_ROWS + c] = new_clicker;
       }
@@ -180,7 +194,6 @@ public:
     for (size_t i = 0; i < NUM_CLICKERS; ++i)
     {
       clicker *c = _clickers[i];
-      c->update(state);
       c->render(renderer);
     }
 
@@ -193,7 +206,6 @@ public:
 
     if (_my_turn)
     {
-
       SDL_RenderPresent(renderer);
       _timer = SDL_GetTicks64() + 1000;
       while (SDL_GetTicks64() < _timer)
@@ -228,6 +240,8 @@ public:
       for (size_t i = 0; i < NUM_CLICKERS; ++i)
       {
         clicker *c = _clickers[i];
+        c->update(state);
+
         if (c->is_clicked() && !c->is_held())
         {
           _input_order.push_back(i);
@@ -241,12 +255,29 @@ public:
             {
               _input_order.clear();
               _my_turn = true;
+              c->unclick();
             }
           }
         }
       }
     }
     // this->loop_on_border(actor);
+    if (state.mouse_moved())
+    {
+      my_text.position(state.mouse_pos());
+
+      std::string postxt("(");
+      postxt += std::to_string(state.mouse_pos().x);
+      postxt += ", ";
+      postxt += std::to_string(state.mouse_pos().y);
+      postxt += ")";
+
+      my_text.text(postxt);
+
+      printf("%s\n", postxt.c_str());
+    }
+
+    my_text.render(renderer);
   }
 };
 

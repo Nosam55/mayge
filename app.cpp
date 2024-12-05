@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include <SDL2/SDL_ttf.h>
 
 namespace may
 {
@@ -25,11 +26,18 @@ namespace may
       fprintf(stderr, "Error initializing SDL_image: %s\n", IMG_GetError());
       exit(EXIT_FAILURE);
     }
+
+    if (TTF_Init() != 0)
+    {
+      fprintf(stderr, "Error initializing SDL_TTF: %s\n", TTF_GetError());
+      exit(EXIT_FAILURE);
+    }
   }
 
   app::~app()
   {
     window().destroy();
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
   }
@@ -43,6 +51,8 @@ namespace may
   {
     bool quit = false;
     auto &state = game_state();
+    
+    state.mouse_moved(false);
 
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
@@ -72,6 +82,7 @@ namespace may
       else if (event.type == SDL_MOUSEMOTION)
       {
         state.mouse_pos(event.motion.x, event.motion.y);
+        state.mouse_moved(true); 
       }
     }
 

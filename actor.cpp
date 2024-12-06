@@ -1,4 +1,5 @@
 #include "actor.hpp"
+#include <cmath>
 
 namespace may
 {

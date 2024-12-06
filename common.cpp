@@ -22,7 +22,7 @@ namespace may
     char buffer[32];
     for (size_t i = 0; i < sizeof(buffer) / sizeof(*buffer); ++i)
     {
-      buffer[i] = (random() & 0xFF) % ('Z' - '0') + '0'; // which characters are eligible for random selection
+      buffer[i] = (rand() & 0xFF) % ('Z' - '0') + '0'; // which characters are eligible for random selection
     }
 
     buffer[sizeof(buffer) / sizeof(*buffer) - 1] = 0;

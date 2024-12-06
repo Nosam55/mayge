@@ -3,6 +3,8 @@
 #include "cfg_reader.hpp"
 #include "gui.hpp"
 
+#include <time.h>
+
 class myactor : public may::animated_actor, public may::floating_actor
 {
 
@@ -16,7 +18,7 @@ public:
     floating_actor::update(state);
     animated_actor::update(state);
 
-    double vel = sqrtf64(may::sq_mag(velocity()));
+    double vel = sqrtf(may::sq_mag(velocity()));
     fps(vel / 4);
   }
 
@@ -63,7 +65,7 @@ public:
     int inc = 2;
     if (highlighted())
     {
-      inc *= 4;
+      inc *= 10;
     }
 
     if (is_clicked())
@@ -99,8 +101,8 @@ public:
 
 class testapp : public may::app
 {
-  static const size_t NUM_ROWS = 4;
-  static const size_t NUM_CLICKERS = 16;
+  static const size_t NUM_ROWS = 5;
+  static const size_t NUM_CLICKERS = 25;
   static const size_t CLICKER_SIZE = 100;
 
   SDL_Cursor *_cursor;
@@ -157,6 +159,12 @@ public:
     int gap_w = (width() - CLICKER_SIZE * NUM_CLICKERS / NUM_ROWS) / (NUM_CLICKERS / NUM_ROWS + 1);
     int gap_h = (height() - CLICKER_SIZE * NUM_ROWS) / (NUM_ROWS + 1);
 
+    SDL_Color RED = {0xFF, 0x00, 0x00, 0xAA};
+    SDL_Color GREEN = {0x00, 0xFF, 0x00, 0xAA};
+    SDL_Color BLUE = {0x00, 0x00, 0xFF, 0xAA};
+    SDL_Color YELLOW = {0xFF, 0xFF, 0x00, 0xAA};
+
+    srand(time(nullptr));
     for (size_t r = 0; r < NUM_ROWS; ++r)
     {
       for (size_t c = 0; c < NUM_CLICKERS / NUM_ROWS; ++c)
@@ -171,6 +179,8 @@ public:
         _clickers[r * NUM_CLICKERS / NUM_ROWS + c] = new_clicker;
       }
     }
+
+    _timer = SDL_GetTicks64() + 1000;
   }
 
   void game_loop(SDL_Renderer *renderer) override
@@ -180,7 +190,6 @@ public:
     for (size_t i = 0; i < NUM_CLICKERS; ++i)
     {
       clicker *c = _clickers[i];
-      c->update(state);
       c->render(renderer);
     }
 
@@ -188,26 +197,39 @@ public:
     {
       SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0x7F);
       SDL_RenderFillRect(renderer, nullptr);
+
+      if(state.is_button_set(SDL_BUTTON_LEFT)){
+        SDL_QuitEvent evt;
+        evt.timestamp = SDL_GetTicks();
+        evt.type = SDL_QUIT;
+        SDL_PushEvent((SDL_Event*)(&evt));
+      }
+
       return;
     }
 
     if (_my_turn)
     {
-
-      SDL_RenderPresent(renderer);
-      _timer = SDL_GetTicks64() + 1000;
-      while (SDL_GetTicks64() < _timer)
+      if (SDL_GetTicks64() >= _timer)
       {
+        if (_game_order.size() && _clickers[_game_order.back()]->is_clicked())
+        {
+          _clickers[_game_order.back()]->unclick(true);
+        }
+
+        _game_order.push_back(rand() % NUM_CLICKERS);
+
+        _highlighted = _game_order.begin();
+        _clickers[*_highlighted]->highlighted(true);
+        _timer = state.tick() + 1000;
+
+        _my_turn = false;
       }
-      state.tick(SDL_GetTicks64());
-
-      _game_order.push_back(rand() % NUM_CLICKERS);
-
-      _highlighted = _game_order.begin();
-      _clickers[*_highlighted]->highlighted(true);
-      _timer = state.tick() + 1000;
-
-      _my_turn = false;
+      else{
+        if(_game_order.size() && _clickers[_game_order.back()]->is_hovered()){
+          _clickers[_game_order.back()]->update(state);
+        }
+      }
     }
     else if (_highlighted != _game_order.end())
     {
@@ -228,8 +250,13 @@ public:
       for (size_t i = 0; i < NUM_CLICKERS; ++i)
       {
         clicker *c = _clickers[i];
+
+        c->update(state);
+
         if (c->is_clicked() && !c->is_held())
         {
+          state.button_unset(SDL_BUTTON_LEFT);
+
           _input_order.push_back(i);
           if (_game_order.at(_input_order.size() - 1) != i)
           {
@@ -241,6 +268,7 @@ public:
             {
               _input_order.clear();
               _my_turn = true;
+              _timer = state.tick() + 1000;
             }
           }
         }
@@ -254,7 +282,7 @@ int main(int argc, char **argv)
 {
   // may::cfg_reader config("test.cfg");
   //  may::app &app = config.app();
-  testapp app;
+  testapp app("Simon Says");
   app.start();
   return 0;
 }

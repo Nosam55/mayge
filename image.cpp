@@ -124,16 +124,19 @@ namespace may
 
   void image::unload()
   {
-    bool is_ref_image = &(_unique_images.at(_path)) == this;
-
-    if (is_ref_image)
+    if (_unique_images.count(_path) > 0)
     {
-      SDL_FreeSurface(_surface);
-      SDL_DestroyTexture(_texture);
-    }
+      bool is_ref_image = &(_unique_images.at(_path)) == this;
 
-    _surface = nullptr;
-    _texture = nullptr;
+      if (is_ref_image)
+      {
+        SDL_FreeSurface(_surface);
+        SDL_DestroyTexture(_texture);
+      }
+
+      _surface = nullptr;
+      _texture = nullptr;
+    }
   }
 
   spritesheet::spritesheet() : spritesheet("", 0, 0)

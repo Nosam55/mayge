@@ -1,32 +1,22 @@
 #include "gui.hpp"
 #include <map>
 
-template <typename T>
-T clamp(T min, T val, T max)
-{
-  if (val < min)
-    return max;
-  if (val > max)
-    return max;
-  return val;
-}
-
 uint8_t of_max(uint8_t min, uint8_t val, uint8_t max)
 {
-  return clamp<uint8_t>(min, val, max) == val ? val : max;
+  return may::clamp<uint8_t>(min, val, max) == val ? val : max;
 }
 
 uint8_t uf_min(uint8_t min, uint8_t val, uint8_t max)
 {
-  return clamp<uint8_t>(min, val, max) == val ? val : min;
+  return may::clamp<uint8_t>(min, val, max) == val ? val : min;
 }
 
 namespace may
 {
-  font::font()
+  font::font() : _path("fonts/PerfectDOSVGA437.ttf")
   {
     this->_source = nullptr;
-    this->_pt_size = 0;
+    this->_pt_size = 16;
   }
 
   font::font(const char *__path, int __pt_size) : _path(__path)
@@ -117,7 +107,7 @@ namespace may
 
   void gtext::load(SDL_Renderer *renderer)
   {
-    if (_texture || renderer != _renderer)
+    if (renderer && (_texture || renderer != _renderer))
     {
       SDL_DestroyTexture(_texture);
       _width = 0;
@@ -179,6 +169,7 @@ namespace may
 
   void pane::center_text()
   {
+    _text.load(nullptr);
     _text.position(_x + _width / 2 - _text.width() / 2, _y + _height / 2 - _text.height() / 2);
   }
 

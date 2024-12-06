@@ -46,87 +46,48 @@ public:
   }
 };
 
+class testapp;
+
 class clicker : virtual public may::button
 {
-  bool _highlighted;
+  int _res_w, _res_h;
 
 public:
-  clicker(SDL_Color color, double x, double y) : clicker(color, x, y, 100, 100) {}
-  clicker(SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(color, x, y, width, height), may::button(color, x, y, width, height)
+  clicker(int res_w, int res_h, SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(color, x, y, width, height), may::button(color, x, y, width, height)
   {
-    _highlighted = false;
+    _res_w = res_w;
+    _res_h = res_h;
+    _text.text(std::to_string(_res_w) + "x" + std::to_string(_res_h));
+    center_text();
   }
 
-  inline bool highlighted() const { return _highlighted; }
-  inline void highlighted(bool __x) { _highlighted = __x; }
-
-  virtual void render(SDL_Renderer *renderer) override
+  inline SDL_Point res() const { return {_res_w, _res_h}; }
+  inline void res(int w, int h)
   {
-    int inc = 2;
-    if (highlighted())
-    {
-      inc *= 4;
-    }
-
-    if (is_clicked())
-    {
-      position(_x + inc, _y + inc);
-      _width -= 2 * inc;
-      _height -= 2 * inc;
-
-      button::render(renderer);
-
-      position(_x - inc, _y - inc);
-      _width += 2 * inc;
-      _height += 2 * inc;
-    }
-    else if (highlighted() || is_hovered())
-    {
-      position(_x - inc / 2, _y - inc / 2);
-      _width += inc;
-      _height += inc;
-
-      button::render(renderer);
-
-      position(_x + inc / 2, _y + inc / 2);
-      _width -= inc;
-      _height -= inc;
-    }
-    else
-    {
-      button::render(renderer);
-    }
+    _res_w = w;
+    _res_h = h;
   }
+
+  virtual void on_click(may::game_state &state) override;
 };
 
 class testapp : public may::app
 {
-  static const size_t NUM_ROWS = 5;
-  static const size_t NUM_CLICKERS = 25;
-  static const size_t CLICKER_SIZE = 100;
-
   SDL_Cursor *_cursor;
-  clicker *_clickers[NUM_CLICKERS];
-  std::vector<size_t> _game_order;
-  std::vector<size_t> _input_order;
-
-  std::vector<size_t>::iterator _highlighted;
   uint64_t _timer;
-  bool _my_turn;
-  bool _lose;
 
   may::font my_font;
   may::gtext my_text;
+  may::pane menu_pane;
+  std::vector<clicker *> _buttons;
 
 public:
   testapp() : testapp("Title") {}
   testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 24)
+  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 24),
+                                             menu_pane(SDL_Color{0, 0, 0, 0x3F}, 100, 2 * h / 3, 600, h / 3 - 10)
   {
     background_color(0x22, 0x22, 0x22, 0xFF);
-    _lose = false;
-    _my_turn = true;
-    _highlighted = _game_order.end();
     _timer = 0;
   }
 
@@ -135,18 +96,12 @@ public:
     if (_cursor)
       SDL_FreeCursor(_cursor);
     _cursor = nullptr;
-
-    for (size_t i = 0; i < NUM_CLICKERS; ++i)
-    {
-      if (_clickers[i])
-        delete _clickers[i];
-    }
   }
 
   virtual void init() override
   {
     app::init();
-
+    game_state().add_thing(this);
     int err = SDL_SetWindowFullscreen(window().window_ptr(), 0);
     if (err)
     {
@@ -158,114 +113,28 @@ public:
     SDL_SetCursor(_cursor);
 
     my_text.font(my_font.ttf_font());
-    my_text.text("Sphinx of black quartz, judge my vow.");
+    my_text.color({0xFF, 0xFF, 0xFF, 0xFF});
+
+    _buttons.push_back(new clicker(800, 600, SDL_Color{0, 0, 0xAA, 0xAA}, 100, 100, 100, 100));
+    _buttons.push_back(new clicker(1200, 900, SDL_Color{0xAA, 0, 0, 0xAA}, 225, 100, 100, 100));
 
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
-
-    int gap_w = (width() - CLICKER_SIZE * NUM_CLICKERS / NUM_ROWS) / (NUM_CLICKERS / NUM_ROWS + 1);
-    int gap_h = (height() - CLICKER_SIZE * NUM_ROWS) / (NUM_ROWS + 1);
-
-    srand(time(nullptr));
-    for (size_t r = 0; r < NUM_ROWS; ++r)
-    {
-      for (size_t c = 0; c < NUM_CLICKERS / NUM_ROWS; ++c)
-      {
-        clicker *new_clicker = new clicker(
-            SDL_Color{rand() & 0xFF, rand() & 0xFF, rand() & 0xFF, 0xAA},
-            gap_w + c * (CLICKER_SIZE + gap_w),
-            gap_h + r * (CLICKER_SIZE + gap_h),
-            CLICKER_SIZE,
-            CLICKER_SIZE);
-
-        new_clicker->text().text("This is my coordinate: (" + std::to_string(r + 1) + ", " + std::to_string(c + 1) + ")");
-        new_clicker->text().font(my_font.ttf_font());
-        new_clicker->text().load(nullptr);
-        new_clicker->center_text();
-
-        _clickers[r * NUM_CLICKERS / NUM_ROWS + c] = new_clicker;
-      }
-    }
   }
 
   void game_loop(SDL_Renderer *renderer) override
   {
     auto &state = game_state();
 
-    for (size_t i = 0; i < NUM_CLICKERS; ++i)
+    menu_pane.render(renderer);
+
+    for (clicker *button : _buttons)
     {
-      clicker *c = _clickers[i];
-      c->render(renderer);
+      button->update(state);
+      button->render(renderer);
     }
 
-    if (_lose)
-    {
-      SDL_SetRenderDrawColor(renderer, 0xFF, 0, 0, 0x7F);
-      SDL_RenderFillRect(renderer, nullptr);
-      return;
-    }
-
-    if (_my_turn)
-    {
-      SDL_RenderPresent(renderer);
-      _timer = SDL_GetTicks64() + 1000;
-      while (SDL_GetTicks64() < _timer)
-      {
-      }
-      state.tick(SDL_GetTicks64());
-
-      _game_order.push_back(rand() % NUM_CLICKERS);
-
-      _highlighted = _game_order.begin();
-      _clickers[*_highlighted]->highlighted(true);
-      _timer = state.tick() + 1000;
-
-      _my_turn = false;
-    }
-    else if (_highlighted != _game_order.end())
-    {
-      if (state.tick() >= _timer)
-      {
-        _timer = state.tick() + 1000;
-        _clickers[*_highlighted]->highlighted(false);
-        ++_highlighted;
-
-        if (_highlighted != _game_order.end())
-        {
-          _clickers[*_highlighted]->highlighted(true);
-        }
-      }
-    }
-    else
-    {
-      for (size_t i = 0; i < NUM_CLICKERS; ++i)
-      {
-        clicker *c = _clickers[i];
-        c->update(state);
-
-        if (c->is_clicked() && !c->is_held())
-        {
-          _input_order.push_back(i);
-          if (_game_order.at(_input_order.size() - 1) != i)
-          {
-            _lose = true;
-          }
-          else
-          {
-            if (_game_order.size() == _input_order.size())
-            {
-              _input_order.clear();
-              _my_turn = true;
-              c->unclick();
-            }
-          }
-        }
-      }
-    }
-    // this->loop_on_border(actor);
     if (state.mouse_moved())
     {
-      my_text.position(state.mouse_pos());
-
       std::string postxt("(");
       postxt += std::to_string(state.mouse_pos().x);
       postxt += ", ";
@@ -274,12 +143,29 @@ public:
 
       my_text.text(postxt);
 
-      printf("%s\n", postxt.c_str());
+      SDL_Point mpos = state.mouse_pos();
+
+      mpos.x = may::clamp(0, mpos.x, width() - my_text.width());
+      mpos.y = may::clamp(0, mpos.y, height() - my_text.height());
+
+      my_text.position(mpos);
     }
 
     my_text.render(renderer);
   }
 };
+
+void clicker::on_click(may::game_state &state)
+{
+  button::on_click(state);
+  testapp &app = state.add_thing<testapp>(nullptr);
+
+  SDL_Rect win{0, 0, _res_w, _res_h};
+  SDL_GetWindowPosition(app.window().window_ptr(), &win.x, &win.y);
+  printf("%+d%+d %dx%d\n", win.x, win.y, win.w, win.h);
+
+  app.window().rect(win);
+}
 
 int main(int argc, char **argv)
 {

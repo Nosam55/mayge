@@ -11,6 +11,51 @@ inline SDL_FPoint operator+(const SDL_FPoint &a, const SDL_FPoint &b) { return {
 
 namespace may
 {
+  template <typename T>
+  T clamp(T min, T val, T max)
+  {
+    if (val < min)
+      return min;
+    if (val > max)
+      return max;
+    return val;
+  }
+
+  class color_t
+  {
+    uint16_t _r, _g, _b, _a, _h, _s, _l;
+    void rgb2hsl();
+    void hsl2rgb();
+
+  public:
+    color_t();
+    color_t(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+    inline SDL_Color rgba() const { return {_r, _g, _b, _a}; }
+    inline uint8_t r() const { return _r; }
+    inline uint8_t g() const { return _g; }
+    inline uint8_t b() const { return _b; }
+    inline uint8_t a() const { return _a; }
+
+    inline SDL_Color hsla() const { return {_h, _s, _l, _a}; }
+    inline uint8_t h() const { return _h; }
+    inline uint8_t s() const { return _s; }
+    inline uint8_t l() const { return _l; }
+
+    inline void rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { rgba({r, g, b, a}); }
+    void rgba(SDL_Color color);
+    inline void r(uint8_t __r) { rgba(__r, _g, _b, _a); }
+    inline void g(uint8_t __g) { rgba(_r, __g, _b, _a); }
+    inline void b(uint8_t __b) { rgba(_r, _g, __b, _a); }
+    inline void a(uint8_t __a) { rgba(_r, _g, _b, __a); }
+
+    inline void hsla(uint8_t h, uint8_t s, uint8_t v, uint8_t a) { hsla({h, s, v, a}); }
+    void hsla(SDL_Color color);
+    inline void h(uint8_t __h) { hsla(__h, _s, _l, _a); }
+    inline void s(uint8_t __s) { hsla(_h, __s, _l, _a); }
+    inline void l(uint8_t __l) { hsla(_h, _s, __l, _a); }
+  };
+
   inline double sq_mag(SDL_Point vec) { return vec.x * vec.x + vec.y * vec.y; }
   inline double sq_mag(SDL_FPoint vec) { return vec.x * vec.x + vec.y * vec.y; }
   char *copy_string(const char *string);
@@ -106,6 +151,16 @@ namespace may
 
     void add_actor(may::actor &__actor);
     void remove_actor(const may::actor &__actor);
+
+    template <typename T>
+    T &add_thing(T *thing)
+    {
+      static T *my_thing = nullptr;
+      if(my_thing == nullptr){
+        my_thing = thing;
+      }
+      return *my_thing;
+    }
   };
 }
 

@@ -80,8 +80,8 @@ namespace may
 
     if (_window_ptr)
     {
-      SDL_SetWindowPosition(_window_ptr, _x, _y);
       SDL_SetWindowSize(_window_ptr, _width, _height);
+      SDL_SetWindowPosition(_window_ptr, _x, _y);
     }
   }
 

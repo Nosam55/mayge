@@ -38,6 +38,10 @@ namespace may
     int _width, _height;
     int _wrap_width;
 
+    size_t _render_length;
+    unsigned _play_delay;
+    uint64_t _timer;
+
   public:
     gtext();
     gtext(const std::string &__text, TTF_Font *__font);
@@ -95,10 +99,19 @@ namespace may
     virtual inline void text(const std::string &__text)
     {
       _text = __text;
+      _render_length = _text.length();
       _redraw = true;
     }
 
+    inline unsigned play_delay() const { return _play_delay; }
+    inline void play_delay(unsigned delay) { _play_delay = delay; }
+
+    inline size_t render_length() const { return _render_length; }
+    inline void render_length(size_t __render_length) { _render_length = __render_length; }
+
     virtual void render(SDL_Renderer *renderer);
+    void update(game_state &state);
+    void play(unsigned delay = 0);
   };
 
   class pane : virtual public actor

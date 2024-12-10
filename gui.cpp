@@ -92,6 +92,9 @@ namespace may
     this->_wrap_width = 0;
     this->_color = SDL_Color{0x00, 0x00, 0x00, 0xFF};
     this->_redraw = true;
+    this->_render_length = _text.length();
+    this->_play_delay = 50;
+    this->_timer = 0;
     this->load(nullptr);
   }
 
@@ -112,7 +115,7 @@ namespace may
     SDL_Surface *rasterized;
     if (_text.length() > 0)
     {
-      rasterized = TTF_RenderUTF8_Solid_Wrapped(_font, _text.c_str(), _color, _wrap_width);
+      rasterized = TTF_RenderUTF8_Solid_Wrapped(_font, _text.substr(0, _render_length).c_str(), _color, _wrap_width);
       if (rasterized == nullptr)
       {
         fprintf(stderr, "unable to rasterize text '%s': %s\n", _text.c_str(), TTF_GetError());
@@ -160,6 +163,26 @@ namespace may
     SDL_Rect dest_rect = bounding_box();
 
     SDL_RenderCopyEx(renderer, _texture, nullptr, &dest_rect, 0.0, nullptr, SDL_FLIP_NONE);
+  }
+
+  void gtext::update(game_state &state)
+  {
+    if (_render_length < _text.length() && state.tick() > _timer)
+    {
+      ++_render_length;
+      _redraw = true;
+      _timer = state.tick() + _play_delay;
+    }
+  }
+
+  void gtext::play(unsigned delay)
+  {
+    if (delay != 0)
+    {
+      _play_delay = delay;
+    }
+
+    _render_length = 0;
   }
 
   pane::~pane()
@@ -257,7 +280,7 @@ namespace may
         {
           on_click(state);
         }
-        else if(_clicked)
+        else if (_clicked)
         {
           _held = true;
         }

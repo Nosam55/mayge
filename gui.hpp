@@ -26,6 +26,8 @@ namespace may
 
   class gtext
   {
+    int min_wrap_width(int wwidth) const;
+
     std::string _text;
     TTF_Font *_font;
     SDL_Texture *_texture;
@@ -74,7 +76,7 @@ namespace may
     virtual inline int wrap_width() const { return _wrap_width; }
     virtual inline void wrap_width(int __wrap_width)
     {
-      _wrap_width = __wrap_width;
+      _wrap_width = min_wrap_width(__wrap_width);
       _redraw = true;
     }
 

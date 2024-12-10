@@ -123,6 +123,8 @@ namespace may
     uint64_t _last_tick = 0;
     float _scroll_x = 0.0f, _scroll_y = 0.0f;
 
+    std::string _composition;
+
   public:
     bool is_key_pressed(SDL_Keycode key) const;
     bool is_key_set(SDL_Keycode key) const;
@@ -159,11 +161,15 @@ namespace may
     void add_actor(may::actor &__actor);
     void remove_actor(const may::actor &__actor);
 
+    inline std::string &composition() { return _composition; }
+    inline void composition(const std::string &__composition) { _composition = __composition; }
+
     template <typename T>
     T &add_thing(T *thing)
     {
       static T *my_thing = nullptr;
-      if(my_thing == nullptr){
+      if (my_thing == nullptr)
+      {
         my_thing = thing;
       }
       return *my_thing;

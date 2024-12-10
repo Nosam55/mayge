@@ -70,6 +70,14 @@ namespace may
     }
   }
 
+  void image::unload_static(const std::string &str)
+  {
+    if (_unique_images.count(str) > 0)
+    {
+      _unique_images[str].unload();
+    }
+  }
+
   SDL_Surface *image::load_surface()
   {
     if (_surface)
@@ -146,7 +154,11 @@ namespace may
     if (_is_reference)
     {
       SDL_FreeSurface(_surface);
-      SDL_DestroyTexture(_texture);
+      
+      if (_texture)
+      {
+        SDL_DestroyTexture(_texture);
+      }
     }
 
     _surface = nullptr;

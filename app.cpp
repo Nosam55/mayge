@@ -20,14 +20,15 @@ namespace may
       exit(EXIT_FAILURE);
     }
 
-    int image_settings = IMG_INIT_PNG;
+    int image_settings = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_WEBP;
     if (!(IMG_Init(image_settings) & image_settings))
     {
       fprintf(stderr, "Error initializing SDL_image: %s\n", IMG_GetError());
       exit(EXIT_FAILURE);
     }
 
-    if(TTF_Init() != 0){
+    if (TTF_Init() != 0)
+    {
       fprintf(stderr, "Error initializing SDL_ttf: %s\n", TTF_GetError());
       exit(EXIT_FAILURE);
     }
@@ -76,7 +77,7 @@ namespace may
     auto &state = game_state();
 
     state.mouse_moved(false);
-    
+
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
     {
@@ -87,6 +88,10 @@ namespace may
       else if (event.type == SDL_KEYDOWN)
       {
         state.key_down(event.key.keysym.sym);
+        if (event.key.keysym.sym == SDLK_BACKSPACE && state.composition().length() > 0)
+        {
+          state.composition().pop_back();
+        }
       }
       else if (event.type == SDL_KEYUP)
       {
@@ -111,6 +116,22 @@ namespace may
       {
         state.scroll_x(event.wheel.preciseX);
         state.scroll_y(event.wheel.preciseY);
+      }
+      else if (event.type == SDL_TEXTINPUT)
+      {
+        state.composition() += event.text.text;
+      }
+      else if (event.type == SDL_TEXTEDITING)
+      {
+        std::string &comp = state.composition();
+        state.composition(comp.substr(0, event.edit.start) + event.edit.text + comp.substr(event.edit.start + event.edit.length));
+      }
+      else if (event.type == SDL_WINDOWEVENT)
+      {
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID != SDL_GetWindowID(window().window_ptr()))
+        {
+          SDL_DestroyWindow(SDL_GetWindowFromID(event.window.windowID));
+        }
       }
     }
 

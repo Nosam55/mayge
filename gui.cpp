@@ -64,7 +64,8 @@ namespace may
   {
     if (_source == nullptr)
     {
-      _source = TTF_OpenFont(_path.c_str(), _pt_size);
+      std::string full_path = SDL_GetBasePath() + _path;
+      _source = TTF_OpenFont(full_path.c_str(), _pt_size);
       if (_source == nullptr)
       {
         fprintf(stderr, "unable to load font '%s': %s\n", _path.c_str(), TTF_GetError());
@@ -73,6 +74,25 @@ namespace may
     }
 
     return _source;
+  }
+
+  int gtext::min_wrap_width(int wwidth) const
+  {
+    int read_len = 0;
+    int max_width = 0;
+    while (read_len < _text.length())
+    {
+      int width, read;
+      TTF_MeasureUTF8(_font, _text.c_str(), wwidth, &width, &read);
+
+      read_len += read;
+      if (width > max_width)
+      {
+        max_width = width;
+      }
+    }
+
+    return max_width;
   }
 
   gtext::gtext() : gtext("", nullptr)

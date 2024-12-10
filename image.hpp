@@ -29,6 +29,7 @@ namespace may
     static image &get_image(const char *path);
     static image empty_image();
     static void unload_static();
+    static void unload_static(const std::string &str);
     SDL_Surface *load_surface();
     SDL_Texture *load_texture(SDL_Renderer *renderer);
     SDL_Surface *surface() const;

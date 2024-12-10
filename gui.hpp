@@ -76,7 +76,7 @@ namespace may
     virtual inline int wrap_width() const { return _wrap_width; }
     virtual inline void wrap_width(int __wrap_width)
     {
-      _wrap_width = min_wrap_width(__wrap_width);
+      _wrap_width = __wrap_width;
       _redraw = true;
     }
 
@@ -139,7 +139,7 @@ namespace may
       this->bg_color(bg_color.r, bg_color.g, bg_color.b, bg_color.a);
       this->fg_color(~bg_color.r, ~bg_color.g, ~bg_color.b, bg_color.a);
 
-      _text.wrap_width(_width - 10);
+      _text.wrap_width(_width);
       _text.font(_font.ttf_font());
     }
 

@@ -124,6 +124,7 @@ namespace may
     float _scroll_x = 0.0f, _scroll_y = 0.0f;
 
     std::string _composition;
+    bool _edited;
 
   public:
     bool is_key_pressed(SDL_Keycode key) const;
@@ -163,6 +164,8 @@ namespace may
 
     inline std::string &composition() { return _composition; }
     inline void composition(const std::string &__composition) { _composition = __composition; }
+    inline bool edited() const { return _edited; }
+    inline void edited(bool __edited) { _edited = __edited; }
 
     template <typename T>
     T &add_thing(T *thing)

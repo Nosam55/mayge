@@ -77,6 +77,7 @@ namespace may
     auto &state = game_state();
 
     state.mouse_moved(false);
+    state.edited(false);
 
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
@@ -91,6 +92,7 @@ namespace may
         if (event.key.keysym.sym == SDLK_BACKSPACE && state.composition().length() > 0)
         {
           state.composition().pop_back();
+          state.edited(true);
         }
       }
       else if (event.type == SDL_KEYUP)
@@ -120,11 +122,13 @@ namespace may
       else if (event.type == SDL_TEXTINPUT)
       {
         state.composition() += event.text.text;
+        state.edited(true);
       }
       else if (event.type == SDL_TEXTEDITING)
       {
         std::string &comp = state.composition();
         state.composition(comp.substr(0, event.edit.start) + event.edit.text + comp.substr(event.edit.start + event.edit.length));
+        state.edited(true);
       }
       else if (event.type == SDL_WINDOWEVENT)
       {

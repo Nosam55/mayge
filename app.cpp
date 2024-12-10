@@ -27,16 +27,39 @@ namespace may
       exit(EXIT_FAILURE);
     }
 
-    if (TTF_Init() != 0)
-    {
-      fprintf(stderr, "Error initializing SDL_TTF: %s\n", TTF_GetError());
+    if(TTF_Init() != 0){
+      fprintf(stderr, "Error initializing SDL_ttf: %s\n", TTF_GetError());
       exit(EXIT_FAILURE);
     }
+
+    SDL_version compiled;
+    SDL_version linked;
+    SDL_version const *linked_ptr;
+
+    SDL_VERSION(&compiled);
+    SDL_GetVersion(&linked);
+
+    printf("Compiled with SDL %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL %d.%d.%d\n", linked.major, linked.minor, linked.patch);
+
+    SDL_IMAGE_VERSION(&compiled);
+    linked_ptr = IMG_Linked_Version();
+
+    printf("\nCompiled with SDL_image %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL_image %d.%d.%d\n", linked_ptr->major, linked_ptr->minor, linked_ptr->patch);
+
+    SDL_TTF_VERSION(&compiled);
+    linked_ptr = TTF_Linked_Version();
+
+    printf("\nCompiled with SDL_ttf %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL_ttf %d.%d.%d\n", linked_ptr->major, linked_ptr->minor, linked_ptr->patch);
   }
 
   app::~app()
   {
     window().destroy();
+    image::unload_static();
+
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
@@ -51,9 +74,9 @@ namespace may
   {
     bool quit = false;
     auto &state = game_state();
-    
-    state.mouse_moved(false);
 
+    state.mouse_moved(false);
+    
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
     {
@@ -82,7 +105,12 @@ namespace may
       else if (event.type == SDL_MOUSEMOTION)
       {
         state.mouse_pos(event.motion.x, event.motion.y);
-        state.mouse_moved(true); 
+        state.mouse_moved(true);
+      }
+      else if (event.type == SDL_MOUSEWHEEL)
+      {
+        state.scroll_x(event.wheel.preciseX);
+        state.scroll_y(event.wheel.preciseY);
       }
     }
 
@@ -201,8 +229,8 @@ namespace may
   {
     SDL_FPoint position = actor.position();
 
-    position.x = fmodf64(position.x, (double)width());
-    position.y = fmodf64(position.y, (double)height());
+    position.x = fmodf(position.x, (double)width());
+    position.y = fmodf(position.y, (double)height());
 
     if (position.x < 0)
     {

@@ -11,6 +11,8 @@ uint8_t uf_min(uint8_t min, uint8_t val, uint8_t max)
   return may::clamp<uint8_t>(min, val, max) == val ? val : min;
 }
 
+// may::font may::DEFAULT_FONT = may::font();
+
 namespace may
 {
   font::font() : _path("fonts/PerfectDOSVGA437.ttf")
@@ -27,11 +29,6 @@ namespace may
 
   font::font(const font &that)
   {
-    if (_source)
-    {
-      unload();
-    }
-
     this->_path = that._path;
     this->_pt_size = that._pt_size;
     this->_source = nullptr;
@@ -59,6 +56,7 @@ namespace may
     if (_source)
     {
       TTF_CloseFont(_source);
+      _source = nullptr;
     }
   }
 
@@ -99,10 +97,7 @@ namespace may
 
   gtext::~gtext()
   {
-    if (_texture)
-    {
-      SDL_DestroyTexture(_texture);
-    }
+    unload();
   }
 
   void gtext::load(SDL_Renderer *renderer)
@@ -120,7 +115,7 @@ namespace may
       rasterized = TTF_RenderUTF8_Solid_Wrapped(_font, _text.c_str(), _color, _wrap_width);
       if (rasterized == nullptr)
       {
-        fprintf(stderr, "unable to rasterize text: %s\n", TTF_GetError());
+        fprintf(stderr, "unable to rasterize text '%s': %s\n", _text.c_str(), TTF_GetError());
       }
 
       _width = rasterized->w;
@@ -146,6 +141,14 @@ namespace may
       _height = 0;
     }
     _redraw = false;
+  }
+
+  void gtext::unload()
+  {
+    if (_texture)
+    {
+      SDL_DestroyTexture(_texture);
+    }
   }
 
   void gtext::render(SDL_Renderer *renderer)
@@ -245,18 +248,16 @@ namespace may
   {
     if (is_inside(state.mouse_posF(), bounding_box()))
     {
-      _hovered = true;
-
       if (state.is_button_pressed(SDL_BUTTON_LEFT))
       {
         bool was_clicked = _clicked;
-        _clicked = true;
+        _clicked = _hovered; // "= _hovered" prevents dragging onto the button to click
 
-        if (!was_clicked)
+        if (_clicked && !was_clicked)
         {
           on_click(state);
         }
-        else
+        else if(_clicked)
         {
           _held = true;
         }
@@ -265,6 +266,7 @@ namespace may
       {
         _clicked = false;
         _held = false;
+        _hovered = true;
       }
     }
     else

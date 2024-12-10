@@ -6,8 +6,9 @@
 #include <vector>
 #include <string>
 
-inline SDL_Point operator+(const SDL_Point &a, const SDL_Point &b) { return {a.x + b.x, a.y + b.y}; }
-inline SDL_FPoint operator+(const SDL_FPoint &a, const SDL_FPoint &b) { return {a.x + b.x, a.y + b.y}; }
+inline SDL_Point operator+(const SDL_Point &a, SDL_Point b) { return {a.x + b.x, a.y + b.y}; }
+inline SDL_FPoint operator+(const SDL_FPoint &a, SDL_FPoint b) { return {a.x + b.x, a.y + b.y}; }
+inline SDL_Rect operator+(const SDL_Rect &a, SDL_Point b) { return {a.x + b.x, a.y + b.y, a.w, a.h}; }
 
 namespace may
 {
@@ -116,10 +117,11 @@ namespace may
     std::map<SDL_Keycode, bool> _keys_pressed;
     std::map<uint8_t, bool> _mouse_buttons;
     SDL_Point _mouse_pos = {-999, -999};
-    bool _mouse_moved;
+    bool _mouse_moved = false;
 
-    double _delta_time;
-    uint64_t _last_tick;
+    double _delta_time = 0.0;
+    uint64_t _last_tick = 0;
+    float _scroll_x = 0.0f, _scroll_y = 0.0f;
 
   public:
     bool is_key_pressed(SDL_Keycode key) const;
@@ -140,6 +142,11 @@ namespace may
     inline void mouse_pos(int x, int y) { _mouse_pos = {x, y}; }
     inline bool mouse_moved() const { return _mouse_moved; }
     inline void mouse_moved(bool moved) { _mouse_moved = moved; }
+
+    inline float scroll_x() const { return _scroll_x; }
+    inline float scroll_y() const { return _scroll_y; }
+    inline void scroll_x(float __scroll_x) { _scroll_x = __scroll_x; }
+    inline void scroll_y(float __scroll_y) { _scroll_y = __scroll_y; }
 
     bool is_button_pressed(uint8_t button) const;
     bool is_button_set(uint8_t button) const;

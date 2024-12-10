@@ -35,6 +35,12 @@ namespace may
     SDL_DestroyWindow(window_ptr());
   }
 
+  void window::fetch_rect()
+  {
+    SDL_GetWindowSize(_window_ptr, &_width, &_height);
+    SDL_GetWindowPosition(_window_ptr, &_x, &_y);
+  }
+
   void window::x(int __x)
   {
     this->_x = __x;

@@ -16,7 +16,7 @@ namespace may
   public:
     font();
     font(const char *__path, int __pt_size);
-    font(const font &that);
+    explicit font(const font &that);
     font &operator=(const font &that);
     ~font();
     void unload();
@@ -45,6 +45,7 @@ namespace may
     ~gtext();
 
     virtual void load(SDL_Renderer *renderer);
+    virtual void unload();
 
     virtual inline SDL_Point position() const { return {_x, _y}; }
     virtual inline void position(SDL_Point __point)

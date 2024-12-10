@@ -10,6 +10,7 @@ namespace may
     this->_surface = nullptr;
     this->_texture = nullptr;
     this->_renderer = nullptr;
+    this->_is_reference = false;
   }
 
   image::image(const char *path) : _path(path)
@@ -17,6 +18,15 @@ namespace may
     this->_surface = nullptr;
     this->_texture = nullptr;
     this->_renderer = nullptr;
+    this->_is_reference = false;
+  }
+
+  image::image(const image &that)
+  {
+    this->_path = that._path;
+    this->_renderer = that._renderer;
+    this->_surface = that._surface;
+    this->_texture = that._texture;
   }
 
   image::~image()
@@ -39,9 +49,10 @@ namespace may
       else
       {
         _unique_images[path] = image(path);
+        _unique_images[path]._is_reference = true;
       }
 
-      return _unique_images[path];
+      return _unique_images.at(path);
     }
   }
 
@@ -49,6 +60,14 @@ namespace may
   {
     image null_img("MAY NULL IMAGE");
     null_img._surface = SDL_CreateRGBSurface(0, 1, 1, 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+  }
+
+  void image::unload_static()
+  {
+    for (auto pair : _unique_images)
+    {
+      pair.second.unload();
+    }
   }
 
   SDL_Surface *image::load_surface()
@@ -124,19 +143,14 @@ namespace may
 
   void image::unload()
   {
-    if (_unique_images.count(_path) > 0)
+    if (_is_reference)
     {
-      bool is_ref_image = &(_unique_images.at(_path)) == this;
-
-      if (is_ref_image)
-      {
-        SDL_FreeSurface(_surface);
-        SDL_DestroyTexture(_texture);
-      }
-
-      _surface = nullptr;
-      _texture = nullptr;
+      SDL_FreeSurface(_surface);
+      SDL_DestroyTexture(_texture);
     }
+
+    _surface = nullptr;
+    _texture = nullptr;
   }
 
   spritesheet::spritesheet() : spritesheet("", 0, 0)

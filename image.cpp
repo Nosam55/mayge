@@ -31,7 +31,7 @@ namespace may
 
   image::~image()
   {
-    unload();
+    //unload();
   }
 
   image &image::get_image(const char *path)

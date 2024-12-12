@@ -115,7 +115,7 @@ public:
     if (_hiragana.size() == 0)
     {
       _hiragana.emplace_front(random_hira(), _font->ttf_font(), _x, _y);
-      _hiragana.front().color({0x33, 0xFF, 0x33, 0xEE});
+      _hiragana.front().color({0x00, 0xCC, 0x00, 0xFF});
 
       _timer = state.tick() + _speed;
     }
@@ -152,11 +152,13 @@ class testapp : public may::app
   std::map<int, may::font> font_map;
   std::vector<clicker *> _buttons;
   std::vector<faller> _fallers;
+  may::gtext my_text;
+  may::font my_font;
 
 public:
   testapp() : testapp("Title") {}
   testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr)
+  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 24)
   {
     background_color(0x11, 0x11, 0x11, 0xFF);
     _timer = 0;
@@ -192,6 +194,7 @@ public:
     }
 
     SDL_SetWindowResizable(window().window_ptr(), SDL_TRUE);
+    SDL_SetWindowBordered(window().window_ptr(), SDL_FALSE);
 
     // err = SDL_SetWindowOpacity(window().window_ptr(), 0.8);
     // if(err){
@@ -206,6 +209,12 @@ public:
     _buttons.push_back(new clicker(1920, 1080, SDL_Color{0xAA, 0, 0xAA, 0xAA}, 350, 100, 100, 100));
 
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
+
+    my_text.text("It's a beautiful day outside. The birds are singing, flowers are blooming... On days like this... Kids like you... S H O U L D  B E  B U R N I N G  I N  H E L L");
+    my_text.font(my_font.ttf_font());
+    my_text.color({0xFF, 0xFF, 0xFF, 0xFF});
+    my_text.wrap_width(400);
+    my_text.position(200, 300);
   }
 
   void game_loop(SDL_Renderer *renderer) override
@@ -217,6 +226,16 @@ public:
     {
       button->update(state);
       button->render(renderer);
+    }
+
+    my_text.update(state);
+    my_text.render(renderer);
+
+    if (state.is_button_set(SDL_BUTTON_RIGHT))
+    {
+      printf("click at %llu\n", state.tick());
+      state.button_unset(SDL_BUTTON_RIGHT);
+      my_text.play(30);
     }
 
     if (state.is_button_pressed(SDL_BUTTON_LEFT) && state.tick() > _timer)
@@ -268,11 +287,148 @@ void clicker::on_click(may::game_state &state)
   app.window().rect(win);
 }
 
+class image_viewer : public may::app
+{
+  may::pane _filename_view;
+  may::gtext _help_text, _error_text;
+  may::button _button;
+  may::font _font;
+  std::list<may::window> _windows;
+
+public:
+  image_viewer() : app("Image Viewer", 400, 400, 100, 100), _font("fonts/PerfectDOSVGA437.ttf", 16)
+  {
+    background_color(0xAA, 0xAA, 0xAA, 0xFF);
+  }
+
+  void init() override
+  {
+    app::init();
+
+    _help_text.text("Enter a path to an image file:");
+    _help_text.font(_font.ttf_font());
+    _help_text.position(width() / 8 + 2, height() / 3 - _font.pt_size() - 4);
+
+    _error_text.text("");
+    _error_text.font(_font.ttf_font());
+    _error_text.position(width() / 8 + 2, height() / 3 + _font.pt_size() + 6);
+    _error_text.color({0xAA, 0x00, 0x00, 0xFF});
+
+    _filename_view.position(width() / 8, height() / 3);
+    _filename_view.width(3 * width() / 4);
+    _filename_view.height(_font.pt_size() + 4);
+
+    _filename_view.bg_color(0xFF, 0xFF, 0xFF, 0xFF);
+    _filename_view.fg_color(0x11, 0x11, 0x11, 0xFF);
+
+    _filename_view.text().font(_font.ttf_font());
+    _filename_view.text().text("some_file.pdf...");
+
+    _filename_view.center_text();
+    _filename_view.text().position(_filename_view.position().x + 2, _filename_view.position().y);
+    _filename_view.text().wrap_width(_filename_view.width() - 4);
+
+    _button.position(width() / 6, 2 * height() / 3);
+    _button.width(2 * width() / 3);
+    _button.height(50);
+
+    _button.bg_color(0x77, 0x77, 0x77, 0xFF);
+    _button.fg_color(0x11, 0x11, 0x11, 0xFF);
+
+    _button.text().text("View...");
+    _button.center_text();
+  }
+
+  ~image_viewer()
+  {
+    for (may::window &win : _windows)
+    {
+      win.destroy();
+    }
+  }
+
+  void on_event(SDL_Event &event)
+  {
+    if (event.type == SDL_WINDOWEVENT)
+    {
+      if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+      {
+        SDL_Window *win_ptr = SDL_GetWindowFromID(event.window.windowID);
+
+        auto win_it = _windows.begin();
+        while (win_it != _windows.end())
+        {
+          if (win_it->window_ptr() == win_ptr)
+          {
+            win_it->destroy();
+            win_it = _windows.erase(win_it);
+          }
+          else
+          {
+            ++win_it;
+          }
+        }
+      }
+    }
+  }
+
+  void game_loop(SDL_Renderer *renderer) override
+  {
+    auto &state = game_state();
+
+    _help_text.render(renderer);
+    _error_text.render(renderer);
+
+    _filename_view.update(state);
+    _filename_view.render(renderer);
+
+    _button.update(state);
+    _button.render(renderer);
+
+    if (state.edited())
+    {
+      _filename_view.text().text(state.composition() + '|');
+    }
+
+    if (_button.is_clicked() && !_button.is_held() || state.is_key_set(SDLK_RETURN))
+    {
+      const char *filename = state.composition().c_str();
+
+      FILE *test = fopen(filename, "r");
+      if (test == nullptr)
+      {
+        _error_text.text("Error: " + std::string(strerror(errno)));
+        return;
+      }
+
+      may::image &img = may::image::get_image(filename);
+      img.load_surface();
+
+      may::window img_win(img.title(), img.surface()->w, img.surface()->h);
+      img_win.load();
+
+      SDL_FillRect(img_win.surface(), nullptr, 0x00000000);
+      SDL_BlitSurface(img.surface(), nullptr, img_win.surface(), nullptr);
+
+      img_win.update_surface();
+
+      _windows.push_back(img_win);
+
+      _error_text.text("");
+
+      if (state.is_key_set(SDLK_RETURN))
+      {
+        state.key_unset(SDLK_RETURN);
+      }
+    }
+  }
+};
+
 int main(int argc, char **argv)
 {
   // may::cfg_reader config("test.cfg");
   //  may::app &app = config.app();
-  testapp app;
+  image_viewer app;
   app.start();
   return 0;
 }

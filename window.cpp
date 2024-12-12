@@ -11,6 +11,10 @@ namespace may
   window::window(const window &that)
   {
     this->_window_ptr = that._window_ptr;
+    this->_width = that._width;
+    this->_height = that._height;
+    this->_x = that._x;
+    this->_y = that._y;
   }
 
   window::window(const char *title, int width, int height, int x, int y) : _title(title)
@@ -145,6 +149,11 @@ namespace may
   window &window::operator=(const window &that)
   {
     this->_window_ptr = that._window_ptr;
+    this->_width = that._width;
+    this->_height = that._height;
+    this->_x = that._x;
+    this->_y = that._y;
+
     return *this;
   }
 }

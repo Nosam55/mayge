@@ -34,7 +34,8 @@ namespace may
     virtual void init();
     virtual void start();
     virtual void game_loop(SDL_Renderer *renderer);
-    
+    virtual void on_event(SDL_Event &event);
+
     inline may::game_state &game_state() { return _game_state; }
     inline void add_actor(may::actor &actor) { _game_state.add_actor(actor); }
 

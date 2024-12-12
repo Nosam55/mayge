@@ -130,13 +130,8 @@ namespace may
         state.composition(comp.substr(0, event.edit.start) + event.edit.text + comp.substr(event.edit.start + event.edit.length));
         state.edited(true);
       }
-      else if (event.type == SDL_WINDOWEVENT)
-      {
-        if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID != SDL_GetWindowID(window().window_ptr()))
-        {
-          SDL_DestroyWindow(SDL_GetWindowFromID(event.window.windowID));
-        }
-      }
+
+      on_event(event);
     }
 
     return quit;
@@ -174,6 +169,11 @@ namespace may
           quit = true;
         }
 
+        if (quit)
+        {
+          break;
+        }
+
         SDL_SetRenderDrawColor(renderer, _bgr, _bgg, _bgb, _bga);
         SDL_RenderClear(renderer);
 
@@ -196,6 +196,10 @@ namespace may
   }
 
   void app::game_loop(SDL_Renderer *renderer)
+  {
+  }
+
+  void app::on_event(SDL_Event &event)
   {
   }
 

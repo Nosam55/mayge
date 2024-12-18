@@ -194,7 +194,7 @@ public:
     }
 
     SDL_SetWindowResizable(window().window_ptr(), SDL_TRUE);
-    SDL_SetWindowBordered(window().window_ptr(), SDL_FALSE);
+    // SDL_SetWindowBordered(window().window_ptr(), SDL_FALSE);
 
     // err = SDL_SetWindowOpacity(window().window_ptr(), 0.8);
     // if(err){
@@ -217,10 +217,23 @@ public:
     my_text.position(200, 300);
   }
 
+  void on_event(SDL_Event &event) override
+  {
+    if (event.type == SDL_WINDOWEVENT)
+    {
+      if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+      {
+        int new_width = event.window.data1;
+        int new_height = event.window.data2;
+
+        window().fetch_rect();
+      }
+    }
+  }
+
   void game_loop(SDL_Renderer *renderer) override
   {
     auto &state = game_state();
-    window().fetch_rect();
 
     for (clicker *button : _buttons)
     {
@@ -235,7 +248,7 @@ public:
     {
       printf("click at %llu\n", state.tick());
       state.button_unset(SDL_BUTTON_RIGHT);
-      my_text.play(30);
+      my_text.play(50);
     }
 
     if (state.is_button_pressed(SDL_BUTTON_LEFT) && state.tick() > _timer)
@@ -428,7 +441,7 @@ int main(int argc, char **argv)
 {
   // may::cfg_reader config("test.cfg");
   //  may::app &app = config.app();
-  image_viewer app;
+  testapp app;
   app.start();
   return 0;
 }

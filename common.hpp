@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <random>
 
 inline SDL_Point operator+(const SDL_Point &a, SDL_Point b) { return {a.x + b.x, a.y + b.y}; }
 inline SDL_FPoint operator+(const SDL_FPoint &a, SDL_FPoint b) { return {a.x + b.x, a.y + b.y}; }
@@ -12,6 +13,22 @@ inline SDL_Rect operator+(const SDL_Rect &a, SDL_Point b) { return {a.x + b.x, a
 
 namespace may
 {
+  static std::default_random_engine _rand_engine;
+  template <typename T>
+  T random(T min, T max)
+  {
+    if (typeid(T) == typeid(float) || typeid(T) == typeid(double))
+    {
+      std::uniform_real_distribution distribution(min, max);
+      return distribution(_rand_engine);
+    }
+    else
+    {
+      std::uniform_int_distribution distribution(min, max);
+      return distribution(_rand_engine);
+    }
+  }
+
   template <typename T>
   T clamp(T min, T val, T max)
   {

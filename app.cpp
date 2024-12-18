@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include <SDL2/SDL_ttf.h>
 
 namespace may
 {
@@ -19,17 +20,48 @@ namespace may
       exit(EXIT_FAILURE);
     }
 
-    int image_settings = IMG_INIT_PNG;
+    int image_settings = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_WEBP;
     if (!(IMG_Init(image_settings) & image_settings))
     {
       fprintf(stderr, "Error initializing SDL_image: %s\n", IMG_GetError());
       exit(EXIT_FAILURE);
     }
+
+    if (TTF_Init() != 0)
+    {
+      fprintf(stderr, "Error initializing SDL_ttf: %s\n", TTF_GetError());
+      exit(EXIT_FAILURE);
+    }
+
+    SDL_version compiled;
+    SDL_version linked;
+    SDL_version const *linked_ptr;
+
+    SDL_VERSION(&compiled);
+    SDL_GetVersion(&linked);
+
+    printf("Compiled with SDL %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL %d.%d.%d\n", linked.major, linked.minor, linked.patch);
+
+    SDL_IMAGE_VERSION(&compiled);
+    linked_ptr = IMG_Linked_Version();
+
+    printf("\nCompiled with SDL_image %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL_image %d.%d.%d\n", linked_ptr->major, linked_ptr->minor, linked_ptr->patch);
+
+    SDL_TTF_VERSION(&compiled);
+    linked_ptr = TTF_Linked_Version();
+
+    printf("\nCompiled with SDL_ttf %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
+    printf("Currently running SDL_ttf %d.%d.%d\n", linked_ptr->major, linked_ptr->minor, linked_ptr->patch);
   }
 
   app::~app()
   {
     window().destroy();
+    image::unload_static();
+
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
   }
@@ -44,6 +76,9 @@ namespace may
     bool quit = false;
     auto &state = game_state();
 
+    state.mouse_moved(false);
+    state.edited(false);
+
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0)
     {
@@ -54,6 +89,11 @@ namespace may
       else if (event.type == SDL_KEYDOWN)
       {
         state.key_down(event.key.keysym.sym);
+        if (event.key.keysym.sym == SDLK_BACKSPACE && state.composition().length() > 0)
+        {
+          state.composition().pop_back();
+          state.edited(true);
+        }
       }
       else if (event.type == SDL_KEYUP)
       {
@@ -72,7 +112,26 @@ namespace may
       else if (event.type == SDL_MOUSEMOTION)
       {
         state.mouse_pos(event.motion.x, event.motion.y);
+        state.mouse_moved(true);
       }
+      else if (event.type == SDL_MOUSEWHEEL)
+      {
+        state.scroll_x(event.wheel.preciseX);
+        state.scroll_y(event.wheel.preciseY);
+      }
+      else if (event.type == SDL_TEXTINPUT)
+      {
+        state.composition() += event.text.text;
+        state.edited(true);
+      }
+      else if (event.type == SDL_TEXTEDITING)
+      {
+        std::string &comp = state.composition();
+        state.composition(comp.substr(0, event.edit.start) + event.edit.text + comp.substr(event.edit.start + event.edit.length));
+        state.edited(true);
+      }
+
+      on_event(event);
     }
 
     return quit;
@@ -110,6 +169,11 @@ namespace may
           quit = true;
         }
 
+        if (quit)
+        {
+          break;
+        }
+
         SDL_SetRenderDrawColor(renderer, _bgr, _bgg, _bgb, _bga);
         SDL_RenderClear(renderer);
 
@@ -132,6 +196,10 @@ namespace may
   }
 
   void app::game_loop(SDL_Renderer *renderer)
+  {
+  }
+
+  void app::on_event(SDL_Event &event)
   {
   }
 
@@ -190,8 +258,8 @@ namespace may
   {
     SDL_FPoint position = actor.position();
 
-    position.x = fmodf64(position.x, (double)width());
-    position.y = fmodf64(position.y, (double)height());
+    position.x = fmodf(position.x, (double)width());
+    position.y = fmodf(position.y, (double)height());
 
     if (position.x < 0)
     {

@@ -11,6 +11,10 @@ namespace may
   window::window(const window &that)
   {
     this->_window_ptr = that._window_ptr;
+    this->_width = that._width;
+    this->_height = that._height;
+    this->_x = that._x;
+    this->_y = that._y;
   }
 
   window::window(const char *title, int width, int height, int x, int y) : _title(title)
@@ -33,6 +37,12 @@ namespace may
   void window::destroy()
   {
     SDL_DestroyWindow(window_ptr());
+  }
+
+  void window::fetch_rect()
+  {
+    SDL_GetWindowSize(_window_ptr, &_width, &_height);
+    SDL_GetWindowPosition(_window_ptr, &_x, &_y);
   }
 
   void window::x(int __x)
@@ -80,8 +90,8 @@ namespace may
 
     if (_window_ptr)
     {
-      SDL_SetWindowPosition(_window_ptr, _x, _y);
       SDL_SetWindowSize(_window_ptr, _width, _height);
+      SDL_SetWindowPosition(_window_ptr, _x, _y);
     }
   }
 
@@ -139,6 +149,11 @@ namespace may
   window &window::operator=(const window &that)
   {
     this->_window_ptr = that._window_ptr;
+    this->_width = that._width;
+    this->_height = that._height;
+    this->_x = that._x;
+    this->_y = that._y;
+
     return *this;
   }
 }

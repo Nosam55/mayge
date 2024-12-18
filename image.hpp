@@ -12,6 +12,8 @@ namespace may
   {
     static std::map<std::string, image> _unique_images;
 
+    bool _is_reference;
+
     std::string _path;
     SDL_Surface *_surface;
     SDL_Texture *_texture;
@@ -21,11 +23,13 @@ namespace may
   public:
     image();
     ~image();
-    image(const image &) = default;
+    image(const image &that);
     image &operator=(const image &) = default;
 
     static image &get_image(const char *path);
     static image empty_image();
+    static void unload_static();
+    static void unload_static(const std::string &str);
     SDL_Surface *load_surface();
     SDL_Texture *load_texture(SDL_Renderer *renderer);
     SDL_Surface *surface() const;

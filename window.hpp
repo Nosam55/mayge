@@ -30,6 +30,8 @@ namespace may
     inline SDL_Rect rect() const { return {_x, _y, _width, _height}; }
     inline SDL_Point position() const { return {_x, _y}; }
 
+    void fetch_rect();
+
     void x(int __x);
     void y(int __y);
     void width(int width);

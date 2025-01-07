@@ -15,9 +15,9 @@ namespace may
   class playable_actor : virtual public actor
   {
   public:
-    playable_actor() : playable_actor(0.0, 0.0, 0.0) {}
-    playable_actor(double x, double y, double angle) : playable_actor(x, y, angle, 0.0, 0.0) {}
-    playable_actor(double x, double y, double angle, double speed, double rot_speed) : actor(x, y, angle, speed, rot_speed) {}
+    playable_actor() : playable_actor(0.0, 0.0, 0.0, 0.0) {}
+    playable_actor(double x, double y, double width, double height) : playable_actor(x, y, width, height, 0.0, 0.0, 0.0) {}
+    playable_actor(double x, double y, double width, double height, double angle, double speed, double rot_speed) : actor(x, y, width, height, angle, speed, rot_speed) {}
     virtual void input(may::game_state &state)
     {
       if (state.is_key_pressed(SDLK_UP))
@@ -43,16 +43,13 @@ namespace may
   {
   protected:
     may::image _image;
-    int _width, _height;
     double _pivot_x, _pivot_y;
 
   public:
     image_actor(const char *image_path, int width, int height);
-    image_actor(const char *image_path, double x, double y, int width, int height, double angle);
-    image_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed);
+    image_actor(const char *image_path, double x, double y, double width, double height, double angle);
+    image_actor(const char *image_path, double x, double y, double width, double height, double angle, double speed, double rot_speed);
 
-    inline int width() const { return _width; }
-    inline int height() const { return _height; }
     inline SDL_FPoint center() const { return {_pivot_x, _pivot_y}; }
     inline void center(SDL_FPoint __center)
     {
@@ -80,9 +77,9 @@ namespace may
     double _fps;
 
   public:
-    animated_actor(const may::spritesheet &sheet, int width, int height, double fps);
-    animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps);
-    animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps, double speed, double rot_speed);
+    animated_actor(const may::spritesheet &sheet, double width, double height, double fps);
+    animated_actor(const may::spritesheet &sheet, double x, double y, double width, double height, double angle, double fps);
+    animated_actor(const may::spritesheet &sheet, double x, double y, double width, double height, double angle, double fps, double speed, double rot_speed);
 
     inline double fps() const { return _fps; }
     inline void fps(double __fps)
@@ -121,9 +118,8 @@ namespace may
 
   public:
     floating_actor();
-    floating_actor(const playable_actor &that);
-    floating_actor(double x, double y, double angle);
-    floating_actor(double x, double y, double angle, double speed, double rot_speed);
+    floating_actor(double x, double y, double width, double height);
+    floating_actor(double x, double y, double width, double height, double angle, double speed, double rot_speed);
     virtual void update(may::game_state &state) override;
     virtual void input(may::game_state &state) override;
 

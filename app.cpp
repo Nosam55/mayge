@@ -37,6 +37,12 @@ namespace may
     SDL_version linked;
     SDL_version const *linked_ptr;
 
+    puts("MAY's Game Engine (mayge)    Copyright (C) 2024    May McCully");
+    puts("      This program comes with ABSOLUTELY NO WARRANTY.\n");
+    puts("   This is free software, and you are welcome to redistribute");
+    puts("   it under the conditions of the GNU GPL v3 or any later version.");
+    puts("   See the included LICENSE file or <https://www.gnu.org/licenses/gpl-3.0.html>");
+    puts("   for full terms of license.\n\n");
     SDL_VERSION(&compiled);
     SDL_GetVersion(&linked);
 
@@ -129,6 +135,13 @@ namespace may
         std::string &comp = state.composition();
         state.composition(comp.substr(0, event.edit.start) + event.edit.text + comp.substr(event.edit.start + event.edit.length));
         state.edited(true);
+      }
+      else if (event.type == SDL_WINDOWEVENT)
+      {
+        if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || event.window.event == SDL_WINDOWEVENT_MOVED)
+        {
+          window().fetch_rect();
+        }
       }
 
       on_event(event);
@@ -231,24 +244,24 @@ namespace may
 
   void app::clamp_on_border(may::actor &actor)
   {
-    SDL_FPoint position = actor.position();
+    SDL_FPoint position = actor.positionF();
 
     if (position.x < 0)
     {
       position.x = 0;
     }
-    else if (position.x > width())
+    else if (position.x > window().width())
     {
-      position.x = width();
+      position.x = window().width();
     }
 
     if (position.y < 0)
     {
       position.y = 0;
     }
-    else if (position.y > height())
+    else if (position.y > window().height())
     {
-      position.y = height();
+      position.y = window().height();
     }
 
     actor.position(position);
@@ -256,18 +269,18 @@ namespace may
 
   void app::loop_on_border(may::actor &actor)
   {
-    SDL_FPoint position = actor.position();
+    SDL_FPoint position = actor.positionF();
 
-    position.x = fmodf(position.x, (double)width());
-    position.y = fmodf(position.y, (double)height());
+    position.x = fmodf(position.x, (double)window().width());
+    position.y = fmodf(position.y, (double)window().height());
 
     if (position.x < 0)
     {
-      position.x = (double)width() - 5.0;
+      position.x = (double)window().width() - 5.0;
     }
     if (position.y < 0)
     {
-      position.y = (double)height() - 5.0;
+      position.y = (double)window().height() - 5.0;
     }
 
     actor.position(position);

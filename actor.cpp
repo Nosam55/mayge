@@ -6,14 +6,12 @@ namespace may
   {
   }
 
-  image_actor::image_actor(const char *image_path, double x, double y, int width, int height, double angle) : image_actor(image_path, x, y, width, height, angle, 100, M_PI)
+  image_actor::image_actor(const char *image_path, double x, double y, double width, double height, double angle) : image_actor(image_path, x, y, width, height, angle, 100, M_PI)
   {
   }
 
-  image_actor::image_actor(const char *image_path, double x, double y, int width, int height, double angle, double speed, double rot_speed) : _image(), actor(x, y, angle, speed, rot_speed)
+  image_actor::image_actor(const char *image_path, double x, double y, double width, double height, double angle, double speed, double rot_speed) : actor(x, y, width, height, angle, speed, rot_speed), _image()
   {
-    this->_width = width;
-    this->_height = height;
     this->_pivot_x = width / 2.0;
     this->_pivot_y = height / 2.0;
 
@@ -63,19 +61,16 @@ namespace may
     this->_y = 0.0;
   }
 
-  animated_actor::animated_actor(const may::spritesheet &sheet, int width, int height, double fps) : animated_actor(sheet, 0.0, 0.0, width, height, 0.0, fps)
+  animated_actor::animated_actor(const may::spritesheet &sheet, double width, double height, double fps) : animated_actor(sheet, 0.0, 0.0, width, height, 0.0, fps)
   {
   }
 
-  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps) : animated_actor(sheet, x, y, width, height, angle, fps, 0.0, 0.0)
+  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, double width, double height, double angle, double fps) : animated_actor(sheet, x, y, width, height, angle, fps, 0.0, 0.0)
   {
   }
 
-  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, int width, int height, double angle, double fps, double speed, double rot_speed) : actor(x, y, angle, speed, rot_speed), _sheet(sheet), _sprite_itr(sheet.looping_iterator())
+  animated_actor::animated_actor(const may::spritesheet &sheet, double x, double y, double width, double height, double angle, double fps, double speed, double rot_speed) : actor(x, y, width, height, angle, speed, rot_speed), _sheet(sheet), _sprite_itr(sheet.looping_iterator())
   {
-    this->_width = width;
-    this->_height = height;
-
     this->_fps = fps;
     this->_next_frame_tick = 0;
 
@@ -119,21 +114,15 @@ namespace may
   {
   }
 
-  floating_actor::floating_actor() : floating_actor(0.0, 0.0, 0.0)
+  floating_actor::floating_actor() : floating_actor(0.0, 0.0, 0.0, 0.0)
   {
   }
 
-  floating_actor::floating_actor(const playable_actor &that) : playable_actor(that)
-  {
-    this->_vx = 0.0;
-    this->_vy = 0.0;
-  }
-
-  floating_actor::floating_actor(double x, double y, double angle) : floating_actor(x, y, angle, 100, M_PI)
+  floating_actor::floating_actor(double x, double y, double width, double height) : floating_actor(x, y, width, height, 0.0, 100, M_PI)
   {
   }
 
-  floating_actor::floating_actor(double x, double y, double angle, double speed, double rot_speed) : playable_actor(x, y, angle, speed, rot_speed)
+  floating_actor::floating_actor(double x, double y, double width, double height, double angle, double speed, double rot_speed) : playable_actor(x, y, width, height, angle, speed, rot_speed)
   {
     this->_vx = 0.0;
     this->_vy = 0.0;

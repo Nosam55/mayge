@@ -20,7 +20,7 @@ namespace may
   {
     if (game_state().is_key_set(SDLK_SPACE))
     {
-      image_actor bullet(_bullet_image.c_str(), player.position().x + player.width() / 2, player.position().y + player.height() / 2, 10, 10, player.angle());
+      image_actor bullet(_bullet_image.c_str(), player.positionF().x + player.width() / 2, player.positionF().y + player.height() / 2, 10, 10, player.angle());
       bullet.speed(200);
 
       _bullets.push_back(bullet);

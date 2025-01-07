@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <random>
+#include <typeinfo>
 
 inline SDL_Point operator+(const SDL_Point &a, SDL_Point b) { return {a.x + b.x, a.y + b.y}; }
 inline SDL_FPoint operator+(const SDL_FPoint &a, SDL_FPoint b) { return {a.x + b.x, a.y + b.y}; }
@@ -17,16 +18,22 @@ namespace may
   template <typename T>
   T random(T min, T max)
   {
-    if (typeid(T) == typeid(float) || typeid(T) == typeid(double))
-    {
-      std::uniform_real_distribution distribution(min, max);
-      return distribution(_rand_engine);
-    }
-    else
-    {
-      std::uniform_int_distribution distribution(min, max);
-      return distribution(_rand_engine);
-    }
+    std::uniform_int_distribution distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
+  template <>
+  inline float random(float min, float max)
+  {
+    std::uniform_real_distribution distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
+  template <>
+  inline double random(double min, double max)
+  {
+    std::uniform_real_distribution distribution(min, max);
+    return distribution(_rand_engine);
   }
 
   template <typename T>
@@ -38,6 +45,9 @@ namespace may
       return max;
     return val;
   }
+
+  SDL_FPoint to_normal_space(SDL_Point pixel_space, SDL_Rect area);
+  SDL_Point to_pixel_space(SDL_FPoint normal_space, SDL_Rect area);
 
   class color_t
   {
@@ -83,6 +93,8 @@ namespace may
   SDL_Rect scale_by(SDL_Rect rect, int px);
   SDL_FRect scale_by(SDL_FRect rect, float px);
   inline SDL_Point center_of(SDL_Rect rect) { return {rect.x + rect.w / 2, rect.y + rect.h / 2}; }
+  SDL_Point clamp_inside(SDL_Point point, SDL_Rect rect);
+  SDL_FPoint clamp_inside(SDL_FPoint point, SDL_FRect rect);
 
   class game_state; // Forward declaration of may::game_state for actor::update method
   class actor
@@ -90,16 +102,15 @@ namespace may
     std::map<std::string, std::string> _tags;
 
   protected:
-    double _x, _y;
+    double _x, _y, _width, _height;
     double _angle;
     double _speed, _rot_speed;
 
   public:
     actor();
-    actor(double x, double y, double angle);
-    actor(double x, double y, double angle, double speed, double rot_speed);
-    actor &operator=(const actor &) = default;
-    virtual ~actor() = default;
+    actor(double x, double y, double width, double height);
+    actor(double __x, double __y, double __width, double __height, double __angle, double __speed, double __rot_speed);
+    virtual ~actor();
 
     bool has_tag(const char *key) const;
     const std::string &operator[](const char *key) const;
@@ -107,9 +118,23 @@ namespace may
 
     bool operator==(const may::actor &that) const;
 
-    SDL_FPoint position() const;
+    virtual SDL_Point position() const;
+    virtual SDL_FPoint positionF() const;
+
     virtual void position(SDL_FPoint pos);
     virtual void position(double x, double y);
+
+    virtual double width() const;
+    virtual double height() const;
+
+    virtual void width(double __width);
+    virtual void height(double __height);
+
+    virtual SDL_Rect rect() const;
+    virtual SDL_FRect rectF() const;
+
+    virtual void rect(SDL_Rect __rect);
+    virtual void rectF(SDL_FRect __rect);
 
     double angle() const;
     virtual void angle(double __angle);

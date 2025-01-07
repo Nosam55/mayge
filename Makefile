@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-w -Wall -Wextra
 LDFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf
-OBJS=common.o image.o actor.o gui.o window.o app.o asteroids_app.o cfg_reader.o main.o
+OBJS=common.o image.o actor.o gui.o window.o app.o asteroids_app.o main.o
 DOBJS=$(addprefix obj/debug/, $(OBJS))
 ROBJS=$(addprefix obj/release/, $(OBJS))
 

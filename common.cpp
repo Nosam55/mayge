@@ -3,31 +3,35 @@
 
 namespace may
 {
-  actor::actor() : actor(0.0, 0.0, 0.0)
+  actor::actor() : actor(0.0, 0.0, 0.0, 0.0)
   {
   }
 
-  actor::actor(double x, double y, double angle) : actor(x, y, angle, 100, M_PI)
+  actor::actor(double x, double y, double width, double height) : actor(x, y, width, height, 0.0, 0.0, 0.0)
   {
   }
 
-  actor::actor(double x, double y, double angle, double speed, double rot_speed)
+  actor::actor(double __x, double __y, double __width, double __height, double __angle, double __speed, double __rot_speed)
   {
-    this->_x = x;
-    this->_y = y;
-    this->_angle = angle;
-    this->_speed = speed;
-    this->_rot_speed = rot_speed;
+    this->_x = __x;
+    this->_y = __y;
+    this->_width = __width;
+    this->_height = __height;
+    this->_angle = __angle;
+    this->_speed = __speed;
+    this->_rot_speed = __rot_speed;
 
-    char buffer[32];
-    for (size_t i = 0; i < sizeof(buffer) / sizeof(*buffer); ++i)
+    std::string buffer;
+    for (size_t i = 0; i < 32; ++i)
     {
-      buffer[i] = random<char>('0', 'Z'); // which characters are eligible for random selection
+      buffer += random<char>('0', 'Z'); // which characters are eligible for random selection
     }
 
-    buffer[sizeof(buffer) / sizeof(*buffer) - 1] = 0;
-
     _tags["id"] = buffer;
+  }
+
+  actor::~actor()
+  {
   }
 
   bool actor::has_tag(const char *key) const
@@ -53,11 +57,16 @@ namespace may
     }
     else
     {
-      return this == &that;
+      return this->_x == that._x && this->_y == that._y && this->_angle == that._angle && this->_rot_speed == that._rot_speed && this->_speed == that._speed;
     }
   }
 
-  SDL_FPoint actor::position() const
+  SDL_Point actor::position() const
+  {
+    return {_x, _y};
+  }
+
+  SDL_FPoint actor::positionF() const
   {
     return {_x, _y};
   }
@@ -72,6 +81,52 @@ namespace may
   {
     _x = x;
     _y = y;
+  }
+
+  double actor::width() const
+  {
+    return _width;
+  }
+
+  double actor::height() const
+  {
+    return _height;
+  }
+
+  void actor::width(double __width)
+  {
+    _width = __width;
+  }
+
+  void actor::height(double __height)
+  {
+    _height = __height;
+  }
+
+  SDL_Rect actor::rect() const
+  {
+    return {_x, _y, _width, _height};
+  }
+
+  SDL_FRect actor::rectF() const
+  {
+    return {_x, _y, _width, _height};
+  }
+
+  void actor::rect(SDL_Rect __rect)
+  {
+    _x = __rect.x;
+    _y = __rect.y;
+    _width = __rect.w;
+    _height = __rect.h;
+  }
+
+  void actor::rectF(SDL_FRect __rect)
+  {
+    _x = __rect.x;
+    _y = __rect.y;
+    _width = __rect.w;
+    _height = __rect.h;
   }
 
   double actor::angle() const
@@ -222,6 +277,18 @@ namespace may
     // }
   }
 
+  SDL_FPoint to_normal_space(SDL_Point pixel_space, SDL_Rect area)
+  {
+    return {2.0 * (pixel_space.x - area.x) / (float)area.w - 1.0,
+            -2.0 * (pixel_space.y - area.y) / (float)area.h - 1.0};
+  }
+
+  SDL_Point to_pixel_space(SDL_FPoint normal_space, SDL_Rect area)
+  {
+    return {(1.0 + normal_space.x) / 2.0 * (float)area.w,
+            -(1.0 + normal_space.y) / 2.0 * (float)area.h};
+  }
+
   char *copy_string(const char *string)
   {
     size_t len = 0;
@@ -285,6 +352,22 @@ namespace may
   SDL_FRect scale_by(SDL_FRect rect, float px)
   {
     return SDL_FRect{rect.x - px, rect.y - px, rect.w + 2.0f * px, rect.h + 2.0f * px};
+  }
+
+  SDL_Point clamp_inside(SDL_Point point, SDL_Rect rect)
+  {
+    point.x = clamp(rect.x, point.x, rect.x + rect.w);
+    point.y = clamp(rect.y, point.y, rect.y + rect.h);
+
+    return point;
+  }
+
+  SDL_FPoint clamp_inside(SDL_FPoint point, SDL_FRect rect)
+  {
+    point.x = clamp(rect.x, point.x, rect.x + rect.w);
+    point.y = clamp(rect.y, point.y, rect.y + rect.h);
+
+    return point;
   }
 
   bool colliding(SDL_Rect a, SDL_Rect b)

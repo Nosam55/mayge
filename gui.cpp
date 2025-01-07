@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include <map>
+#include <typeinfo>
 
 uint8_t of_max(uint8_t min, uint8_t val, uint8_t max)
 {
@@ -15,10 +16,12 @@ uint8_t uf_min(uint8_t min, uint8_t val, uint8_t max)
 
 namespace may
 {
-  font::font() : _path("fonts/PerfectDOSVGA437.ttf")
+  const layout_opts layout_opts::DEFAULT_TEXT(JUSTIFY_LEFT, ALIGN_TOP, 5, SPACING_AROUND, 1, DIRECTION_HORIZONTAL);
+
+  font::font() : _path("")
   {
     this->_source = nullptr;
-    this->_pt_size = 16;
+    this->_pt_size = 0;
   }
 
   font::font(const char *__path, int __pt_size) : _path(__path)
@@ -103,12 +106,10 @@ namespace may
   {
   }
 
-  gtext::gtext(const std::string &__text, TTF_Font *__font, int __x, int __y) : _text(__text), _font(__font), _x(__x), _y(__y)
+  gtext::gtext(const std::string &__text, TTF_Font *__font, int __x, int __y) : actor(__x, __y, 0, 0, 0.0, 0.0, 0.0), _text(__text), _font(__font)
   {
     this->_texture = nullptr;
     this->_renderer = nullptr;
-    this->_width = 0;
-    this->_height = 0;
     this->_wrap_width = 0;
     this->_color = SDL_Color{0x00, 0x00, 0x00, 0xFF};
     this->_redraw = true;
@@ -174,6 +175,62 @@ namespace may
     }
   }
 
+  double gtext::width() const
+  {
+    if (!_texture && _font)
+    {
+      int width;
+      if (!TTF_MeasureUTF8(_font, _text.c_str(), _wrap_width, &width, nullptr))
+      {
+        fprintf(stderr, "unable to measure gtext width: %s\n", TTF_GetError());
+        SDL_Surface *raster = TTF_RenderUTF8_Solid_Wrapped(_font, _text.c_str(), _color, _wrap_width);
+
+        width = raster->w;
+
+        SDL_FreeSurface(raster);
+      }
+
+      return width;
+    }
+    else
+    {
+      return _width;
+    }
+  }
+
+  double gtext::height() const
+  {
+    if (!_texture && _font)
+    {
+      double height = 0.0;
+      int total = 0;
+      while (total < _text.length())
+      {
+        int count;
+        if (!TTF_MeasureUTF8(_font, _text.c_str(), _wrap_width, nullptr, &count))
+        {
+          fprintf(stderr, "unable to measure gtext height: %s\n", TTF_GetError());
+
+          SDL_Surface *raster = TTF_RenderUTF8_Solid_Wrapped(_font, _text.c_str(), _color, _wrap_width);
+          height = raster->h;
+
+          SDL_FreeSurface(raster);
+
+          break;
+        }
+
+        total += count;
+        height += TTF_FontHeight(_font);
+      }
+
+      return height;
+    }
+    else
+    {
+      return _height;
+    }
+  }
+
   void gtext::render(SDL_Renderer *renderer)
   {
     if (_redraw || _texture == nullptr || renderer != _renderer)
@@ -205,24 +262,55 @@ namespace may
     _render_length = 0;
   }
 
-  pane::~pane()
+  void pane::destroy()
   {
     for (may::actor *child : _children)
     {
+      child->destroy();
       delete child;
     }
   }
 
-  void pane::center_text()
+  void pane::layout()
   {
-    _text.load(nullptr);
-    _text.position(_x + _width / 2 - _text.width() / 2, _y + _height / 2 - _text.height() / 2);
+    SDL_FRect clip_rect = {positionF().x + _layout.margin(), positionF().y + _layout.margin(), width() - _layout.margin() * 2, height() - _layout.margin() * 2};
+    SDL_FPoint content_corner = {0, 0};
+
+    double max_height = 0.0;
+    for (actor *child : _children)
+    {
+      if (content_corner.x + child->width() < clip_rect.w)
+      {
+        if (child->height() > max_height)
+        {
+          max_height = child->height();
+        }
+      }
+      else
+      {
+        content_corner.x = 0.0;
+        content_corner.y += max_height + _layout.spacing_size();
+
+        max_height = 0.0;
+      }
+
+      child->position(content_corner.x + clip_rect.x, content_corner.y + clip_rect.y);
+      content_corner.x += child->width() + _layout.spacing_size();
+    }
+
+    for (actor *child : _children)
+    {
+      pane *child_pane = dynamic_cast<pane *>(child);
+      if (child_pane)
+      {
+        child_pane->layout();
+      }
+    }
   }
 
   void pane::fg_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
   {
     _fg_color = {r, g, b, a};
-    _text.color(_fg_color);
   }
 
   void pane::bg_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -259,14 +347,10 @@ namespace may
     SDL_SetRenderDrawColor(renderer, _bg_color.r, _bg_color.g, _bg_color.b, _bg_color.a);
     SDL_RenderFillRectF(renderer, &dest);
 
-    if (_text.text()[0] != 0)
-      _text.render(renderer);
-
-    for (auto child : _children)
+    for (actor *child : _children)
     {
       child->render(renderer);
     }
-
     SDL_SetRenderDrawColor(renderer, orig.r, orig.g, orig.b, orig.a);
   }
 

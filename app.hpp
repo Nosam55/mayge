@@ -16,6 +16,7 @@ namespace may
     may::game_state _game_state;
     uint8_t _bgr, _bgg, _bgb, _bga;
     image _bg_img;
+    bool _is_running;
     bool process_events();
 
   public:
@@ -33,6 +34,7 @@ namespace may
     
     virtual void init();
     virtual void start();
+    virtual void stop();
     virtual void game_loop(SDL_Renderer *renderer);
     virtual void on_event(SDL_Event &event);
 

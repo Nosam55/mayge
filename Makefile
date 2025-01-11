@@ -1,24 +1,27 @@
 CXX=g++
 CXXFLAGS=-w -Wall -Wextra
 LDFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf
-OBJS=common.o image.o actor.o gui.o window.o app.o asteroids_app.o cfg_reader.o main.o
+OBJS=common.o image.o audio.o actor.o gui.o window.o app.o asteroids_app.o
 DOBJS=$(addprefix obj/debug/, $(OBJS))
 ROBJS=$(addprefix obj/release/, $(OBJS))
 
 .PHONY: clean remake all
 
 release: CXXFLAGS+= -O2
-release: $(ROBJS)
+release: $(ROBJS) main.cpp
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 debug: CXXFLAGS+= -DDEBUG -g
-debug: $(DOBJS)
+debug: $(DOBJS) main.cpp
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 obj/release/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 obj/debug/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+lib/debug/%.so: $()
+	$(CXX) $(CXXFLAGS)
 
 remake: clean all
 

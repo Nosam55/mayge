@@ -17,16 +17,22 @@ namespace may
   template <typename T>
   T random(T min, T max)
   {
-    if (typeid(T) == typeid(float) || typeid(T) == typeid(double))
-    {
-      std::uniform_real_distribution distribution(min, max);
-      return distribution(_rand_engine);
-    }
-    else
-    {
-      std::uniform_int_distribution distribution(min, max);
-      return distribution(_rand_engine);
-    }
+    std::uniform_int_distribution distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
+  template <>
+  inline float random(float min, float max)
+  {
+    std::uniform_real_distribution distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
+  template <>
+  inline double random(double min, double max)
+  {
+    std::uniform_real_distribution distribution(min, max);
+    return distribution(_rand_engine);
   }
 
   template <typename T>

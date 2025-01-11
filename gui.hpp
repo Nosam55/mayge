@@ -125,7 +125,6 @@ namespace may
     SDL_Color _bg_color;
 
     may::gtext _text;
-    may::font _font;
 
   public:
     pane() : pane(0, 0) {}
@@ -140,7 +139,6 @@ namespace may
       this->fg_color(~bg_color.r, ~bg_color.g, ~bg_color.b, bg_color.a);
 
       _text.wrap_width(_width);
-      _text.font(_font.ttf_font());
     }
 
     virtual ~pane();

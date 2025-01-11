@@ -4,33 +4,41 @@
 #include <exception>
 #include <cstring>
 
-namespace may {
-  class sdl_exception : std::exception {
+namespace may
+{
+  class sdl_exception : std::exception
+  {
     char *msg;
+
   public:
-    sdl_exception(){
+    sdl_exception()
+    {
       const char *msg = SDL_GetError();
       size_t len = std::strlen(msg);
       this->msg = new char[len];
       std::strncpy(this->msg, msg, len);
     }
-    sdl_exception(const sdl_exception &that){
+    sdl_exception(const sdl_exception &that)
+    {
       delete[] this->msg;
       size_t len = std::strlen(that.msg);
       this->msg = new char[len];
       std::strncpy(this->msg, that.msg, len);
     }
-    sdl_exception& operator=(const sdl_exception& that){
+    sdl_exception &operator=(const sdl_exception &that)
+    {
       delete[] this->msg;
       size_t len = std::strlen(that.msg);
       this->msg = new char[len];
       std::strncpy(this->msg, that.msg, len);
       return *this;
     }
-    const char *what() {
+    const char *what()
+    {
       return this->msg;
     }
-    ~sdl_exception(){
+    ~sdl_exception()
+    {
       delete[] this->msg;
     }
   };

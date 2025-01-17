@@ -1,8 +1,4 @@
-#include "app.hpp"
-#include "asteroids_app.hpp"
-#include "gui.hpp"
-#include "audio.hpp"
-
+#include <mayge>
 #include <list>
 #include <ctime>
 #include <array>

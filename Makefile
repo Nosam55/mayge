@@ -1,9 +1,10 @@
 CXX=g++
 CXXFLAGS=-w -Wall -Wextra -g
 LDFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf
-OBJS=common.o image.o audio.o actor.o gui.o window.o app.o
-DOBJS=$(addprefix obj/debug/, $(OBJS))
-ROBJS=$(addprefix obj/release/, $(OBJS))
+OBJS=common image audio actor gui window app
+DOBJS=$(addsuffix .o, $(addprefix obj/debug/, $(OBJS)))
+ROBJS=$(addsuffix .o, $(addprefix obj/release/, $(OBJS)))
+LINCS=$(addsuffix .hpp, $(OBJS)) sdl_exception.hpp
 _ARCH=$(shell $(CXX) -dumpmachine)
 _SOVER=0
 
@@ -14,11 +15,17 @@ all: debug release
 build: lib/release/libmayge.so lib/debug/libmayge.so
 
 install: build
+	mkdir -p /usr/local/include/mayge.d
+	cp mayge /usr/local/include
+	for file in $(LINCS); do cp "$$file" /usr/local/include/mayge.d; done;
+
 	mkdir -p /usr/local/lib/$(_ARCH)
-	mv lib/release/* /usr/local/lib/$(_ARCH)
+	for file in $(shell ls lib/release); do mv "lib/release/$$file" /usr/local/lib/$(_ARCH); done;
 
 uninstall:
-	rm -r /usr/local/lib/$(_ARCH)/libmayge.so{,.$(_SOVER)} || :;
+	rm -r /usr/local/lib/$(_ARCH)/libmayge.* || :;
+	rm /usr/local/include/mayge || :;
+	rm -r /usr/local/include/mayge.d || :;
 
 release: CXXFLAGS+= -O2 
 release: main.cpp lib/release/libmayge.so

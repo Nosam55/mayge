@@ -1,0 +1,12 @@
+#ifndef MAYGE_
+#define MAYGE_
+
+#include "mayge.d/common.hpp"
+#include "mayge.d/actor.hpp"
+#include "mayge.d/image.hpp"
+#include "mayge.d/audio.hpp"
+#include "mayge.d/window.hpp"
+#include "mayge.d/gui.hpp"
+#include "mayge.d/app.hpp"
+
+#endif /* MAYGE_ */

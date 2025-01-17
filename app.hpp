@@ -3,6 +3,7 @@
 #include "window.hpp"
 #include "image.hpp"
 #include "actor.hpp"
+#include "audio.hpp"
 #include "common.hpp"
 
 #include <map>
@@ -12,6 +13,7 @@ namespace may
 {
   class app
   {
+    may::audio_device _audio_out;
     may::window _window;
     may::game_state _game_state;
     uint8_t _bgr, _bgg, _bgb, _bga;
@@ -24,6 +26,7 @@ namespace may
     app(const char *title, int width, int height, int x = SDL_WINDOWPOS_CENTERED, int y = SDL_WINDOWPOS_CENTERED);
     virtual ~app();
 
+    may::audio_device &audio_out();
     may::window &window();
     void background_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
     void background_color(uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a) const;

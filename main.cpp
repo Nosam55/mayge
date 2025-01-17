@@ -1,6 +1,5 @@
 #include "app.hpp"
 #include "asteroids_app.hpp"
-#include "cfg_reader.hpp"
 #include "gui.hpp"
 
 #include <ctime>
@@ -154,6 +153,12 @@ class testapp : public may::app
   std::vector<faller> _fallers;
   may::gtext my_text;
   may::font my_font;
+  may::audio_device audio_device;
+  std::vector<float> _waveform;
+  wavedata_t _data;
+  may::window _control_panel;
+  may::button _sin_button, _saw_button, _tri_button, _sq_button;
+  may::button _pure_button, _major_button, _minor_button;
 
 public:
   testapp() : testapp("Title") {}
@@ -210,11 +215,62 @@ public:
 
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
 
-    my_text.text("It's a beautiful day outside. The birds are singing, flowers are blooming... On days like this... Kids like you... S H O U L D  B E  B U R N I N G  I N  H E L L");
-    my_text.font(my_font.ttf_font());
-    my_text.color({0xFF, 0xFF, 0xFF, 0xFF});
-    my_text.wrap_width(400);
-    my_text.position(200, 300);
+    int aud = SDL_GetNumAudioDrivers();
+
+    for (int i = 0; i < aud; ++i)
+    {
+      printf("audio driver %d: '%s'\n", i, SDL_GetAudioDriver(i));
+    }
+
+    aud = SDL_GetNumAudioDevices(0);
+    for (int i = 0; i < aud; ++i)
+    {
+      printf("audio device %d: '%s'\n", i, SDL_GetAudioDeviceName(i, 0));
+    }
+
+    audio_device.open(AUDIO_F32, 48000, 1, 1024, audio_callback, &_data);
+
+    printf("obtained audio device '%s'\n", audio_device.name().c_str());
+    printf("device id: %d\n", audio_device.id());
+    printf("device freq: %d\n", audio_device.freq());
+    printf("device channels: %d\n", audio_device.channels());
+    printf("device frame buffer: %d\n", audio_device.framebuffer_size());
+
+    _control_panel = may::window("Control Panel", 400, 200);
+    _control_panel.load();
+
+    SDL_Color off_white = {0xEE, 0xEE, 0xEE, 0xAA};
+    _sq_button = may::button(off_white, 0, 0, 100, 50);
+    _saw_button = may::button(off_white, 0, 50, 100, 50);
+    _sin_button = may::button(off_white, 0, 100, 100, 50);
+    _tri_button = may::button(off_white, 0, 150, 100, 50);
+    _pure_button = may::button(off_white, 100, 0, 100, 200.0 / 3);
+    _major_button = may::button(off_white, 100, 200.0 / 3, 100, 200.0 / 3);
+    _minor_button = may::button(off_white, 100, 400.0 / 3, 100, 200.0 / 3);
+
+    _sq_button.text().font(my_font.ttf_font());
+    _saw_button.text().font(my_font.ttf_font());
+    _sin_button.text().font(my_font.ttf_font());
+    _tri_button.text().font(my_font.ttf_font());
+    _pure_button.text().font(my_font.ttf_font());
+    _major_button.text().font(my_font.ttf_font());
+    _minor_button.text().font(my_font.ttf_font());
+
+    _sq_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _saw_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _sin_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _tri_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _pure_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _major_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _minor_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+
+    _sq_button.text().text("Square");
+    _saw_button.text().text("Sawtooth");
+    _sin_button.text().text("Sine");
+    _tri_button.text().text("Triangle");
+    _pure_button.text().text("Pure");
+    _major_button.text().text("Major");
+    _minor_button.text().text("Minor");
   }
 
   void on_event(SDL_Event &event) override
@@ -228,6 +284,17 @@ public:
 
         window().fetch_rect();
       }
+      else if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+      {
+        if (event.window.windowID == _control_panel.id())
+        {
+          _control_panel.destroy();
+        }
+        else
+        {
+          stop();
+        }
+      }
     }
   }
 
@@ -237,27 +304,106 @@ public:
 
     for (clicker *button : _buttons)
     {
-      button->update(state);
-      button->render(renderer);
-    }
+      _sq_button.update(state);
+      _saw_button.update(state);
+      _sin_button.update(state);
+      _tri_button.update(state);
+      _pure_button.update(state);
+      _major_button.update(state);
+      _minor_button.update(state);
 
-    my_text.update(state);
-    my_text.render(renderer);
-
-    if (state.is_button_set(SDL_BUTTON_RIGHT))
-    {
-      printf("click at %llu\n", state.tick());
-      state.button_unset(SDL_BUTTON_RIGHT);
-      my_text.play(50);
-    }
-
-    if (state.is_button_pressed(SDL_BUTTON_LEFT) && state.tick() > _timer)
-    {
-      int font_size = rand() % 25 + 4;
-
-      if (font_map.count(font_size) == 0)
+      if (_sq_button.is_clicked() && !_sq_button.is_held())
       {
-        font_map.emplace(font_size, may::font("fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", font_size));
+        SDL_LockAudioDevice(audio_device.id());
+
+        select_oscillator<may::square_osc>(_data, _data.oscillator->frequency());
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      }
+      else if (_saw_button.is_clicked() && !_saw_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        select_oscillator<may::sawtooth_osc>(_data, _data.oscillator->frequency());
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      }
+      else if (_sin_button.is_clicked() && !_sin_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        select_oscillator<may::sine_osc>(_data, _data.oscillator->frequency());
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      }
+      else if (_tri_button.is_clicked() && !_tri_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        select_oscillator<may::triangle_osc>(_data, _data.oscillator->frequency());
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_pure_button.is_clicked() && !_pure_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(1.0);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_major_button.is_clicked() && !_major_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(SDL_pow(2.0, 4.0 / 12.0));
+        _data.tones.push_back(SDL_pow(2.0, 7.0 / 12.0));
+        _data.tones.push_back(2.0);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_minor_button.is_clicked() && !_minor_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(SDL_pow(2.0, 3.0 / 12.0));
+        _data.tones.push_back(SDL_pow(2.0, 7.0 / 12.0));
+        _data.tones.push_back(2.0);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      }
+    }
+
+    // Render control panel
+    SDL_Renderer *renderer_cp = _control_panel.accelerated_renderer();
+    SDL_RenderClear(renderer_cp);
+
+    _sq_button.center_text();
+    _saw_button.center_text();
+    _sin_button.center_text();
+    _tri_button.center_text();
+    _pure_button.center_text();
+    _major_button.center_text();
+    _minor_button.center_text();
+
+    _sq_button.render(renderer_cp);
+    _saw_button.render(renderer_cp);
+    _sin_button.render(renderer_cp);
+    _tri_button.render(renderer_cp);
+    _pure_button.render(renderer_cp);
+    _major_button.render(renderer_cp);
+    _minor_button.render(renderer_cp);
+
+    SDL_RenderPresent(renderer_cp);
+
+    /* ********************* PROCESS AND RENDER MAIN SCREEN ********************* */
+    if (window().flags() & SDL_WINDOW_MOUSE_FOCUS)
+    {
+      // Handle playing audio on clicks
+      if (state.is_button_set(SDL_BUTTON_LEFT))
+      {
+        audio_device.play();
+        state.button_unset(SDL_BUTTON_LEFT);
       }
 
       _fallers.push_back(faller(state.mouse_posF().x, state.mouse_posF().y, font_map.at(font_size)));

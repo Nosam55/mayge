@@ -66,6 +66,11 @@ namespace may
     SDL_Quit();
   }
 
+  may::audio_device &app::audio_out()
+  {
+    return _audio_out;
+  }
+
   window &app::window()
   {
     return this->_window;

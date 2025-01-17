@@ -14,7 +14,7 @@ namespace may
   app::app(const char *title, int width, int height, int x, int y) : _window(title, width, height, x, y), _bg_img()
   {
     background_color(0xFF, 0xFF, 0xFF, 0xFF);
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
       fprintf(stderr, "Error initializing SDL: %s\n", SDL_GetError());
       exit(EXIT_FAILURE);
@@ -54,6 +54,8 @@ namespace may
 
     printf("\nCompiled with SDL_ttf %d.%d.%d\n", compiled.major, compiled.minor, compiled.patch);
     printf("Currently running SDL_ttf %d.%d.%d\n", linked_ptr->major, linked_ptr->minor, linked_ptr->patch);
+
+    _is_running = false;
   }
 
   app::~app()
@@ -151,6 +153,31 @@ namespace may
     SDL_Surface *surface = window.surface();
 
     SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0x55, 0x00, 0x55));
+
+    may::image &logo = image::get_image("mayge-logo.png");
+    SDL_Surface *logo_image = logo.load_surface();
+
+    int logo_size = 64;
+    if (surface->w > logo_size && surface->h > logo_size)
+    {
+      logo_size <<= 1;
+      while (surface->w > logo_size && surface->h > logo_size)
+      {
+        logo_size <<= 1;
+      }
+
+      logo_size >>= 2;
+    }
+
+    SDL_Rect logo_rect = {
+      x : surface->w / 2 - logo_size / 2,
+      y : surface->h / 2 - logo_size / 2,
+      w : logo_size,
+      h : logo_size
+    };
+
+    SDL_BlitScaled(logo_image, nullptr, surface, &logo_rect);
+
     window.update_surface();
   }
 
@@ -166,15 +193,17 @@ namespace may
 
       game_state().tick(SDL_GetTicks64());
       game_state().tick(SDL_GetTicks64());
-      for (bool quit = false; !quit; quit)
+      
+      _is_running = true;
+      while(_is_running)
       {
-        quit = process_events();
+        bool quit = process_events();
         if (game_state().is_key_pressed(SDLK_ESCAPE))
         {
-          quit = true;
+          _is_running = false;
         }
 
-        if (quit)
+        if (!_is_running || quit)
         {
           break;
         }
@@ -198,6 +227,11 @@ namespace may
     {
       fprintf(stderr, "Caught exception: %s\n", ex.what());
     }
+  }
+
+  void app::stop()
+  {
+    _is_running = false;
   }
 
   void app::game_loop(SDL_Renderer *renderer)

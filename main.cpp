@@ -1,7 +1,9 @@
 #include "app.hpp"
 #include "asteroids_app.hpp"
 #include "gui.hpp"
+#include "audio.hpp"
 
+#include <list>
 #include <ctime>
 #include <array>
 
@@ -46,112 +48,31 @@ public:
   }
 };
 
-class testapp;
-
-class clicker : virtual public may::button
+struct wavedata_t
 {
-  int _res_w, _res_h;
-
-public:
-  clicker(int res_w, int res_h, SDL_Color color, double x, double y, int width, int height) : may::actor(x, y, 0, 0, 0), may::pane(color, x, y, width, height), may::button(color, x, y, width, height)
-  {
-    _res_w = res_w;
-    _res_h = res_h;
-    _text.text(std::to_string(_res_w) + "x" + std::to_string(_res_h));
-    center_text();
-  }
-
-  inline SDL_Point res() const { return {_res_w, _res_h}; }
-  inline void res(int w, int h)
-  {
-    _res_w = w;
-    _res_h = h;
-  }
-
-  virtual void on_click(may::game_state &state) override;
+  may::base_oscillator *oscillator;
+  std::vector<float> tones;
+  std::vector<float> waveform10;
 };
 
-class faller
+template <class TOsc>
+void select_oscillator(wavedata_t container, double freq)
 {
-  static const char *random_hira()
+  if (container.oscillator)
   {
-    static std::array<const char *, 0x97 - 0x41> glyphs{"\u3041", "\u3042", "\u3043", "\u3044", "\u3045", "\u3046", "\u3047", "\u3048", "\u3049", "\u304a", "\u304b", "\u304c", "\u304d", "\u304e", "\u304f", "\u3050", "\u3051", "\u3052", "\u3053", "\u3054", "\u3055", "\u3056", "\u3057", "\u3058", "\u3059", "\u305a", "\u305b", "\u305c", "\u305d", "\u305e", "\u305f", "\u3060", "\u3061", "\u3062", "\u3063", "\u3064", "\u3065", "\u3066", "\u3067", "\u3068", "\u3069", "\u306a", "\u306b", "\u306c", "\u306d", "\u306e", "\u306f", "\u3070", "\u3071", "\u3072", "\u3073", "\u3074", "\u3075", "\u3076", "\u3077", "\u3078", "\u3079", "\u307a", "\u307b", "\u307c", "\u307d", "\u307e", "\u307f", "\u3080", "\u3081", "\u3082", "\u3083", "\u3084", "\u3085", "\u3086", "\u3087", "\u3088", "\u3089", "\u308a", "\u308b", "\u308c", "\u308d", "\u308e", "\u308f", "\u3090", "\u3091", "\u3092", "\u3093", "\u3094", "\u3095", "\u3096"};
-    const char *glyph = glyphs[rand() % glyphs.size()];
-
-    return glyph;
+    delete container.oscillator;
   }
 
-  std::list<may::gtext> _hiragana;
+  container.oscillator = new TOsc(freq);
+}
 
-  double _x, _y;
-  may::font *_font;
-  uint64_t _speed;
-  uint64_t _timer;
+void audio_callback(void *userdata, uint8_t *stream, int len);
 
-public:
-  faller(double x, double y, may::font &font) : _font(&font)
-  {
-    _x = x;
-    _y = y;
-    _timer = 0;
-    _speed = rand() % 100 + 50;
-  }
-
-  double top() const
-  {
-    if (_hiragana.size() > 0)
-    {
-      return _hiragana.back().position().y;
-    }
-    else
-    {
-      return _y;
-    }
-  }
-
-  void update(may::game_state &state)
-  {
-    if (_hiragana.size() == 0)
-    {
-      _hiragana.emplace_front(random_hira(), _font->ttf_font(), _x, _y);
-      _hiragana.front().color({0x00, 0xCC, 0x00, 0xFF});
-
-      _timer = state.tick() + _speed;
-    }
-    else if (state.tick() > _timer)
-    {
-      _y += _hiragana.back().height();
-
-      _hiragana.emplace_front(random_hira(), _font->ttf_font(), _x, _y);
-      _hiragana.front().color({0x00, 0xCC, 0x00, 0xFF});
-
-      _timer = state.tick() + _speed;
-
-      if (_hiragana.size() >= 35)
-      {
-        _hiragana.pop_back();
-      }
-    }
-  }
-
-  void render(SDL_Renderer *renderer)
-  {
-    for (may::gtext &text : _hiragana)
-    {
-      text.render(renderer);
-    }
-  }
-};
-
-class testapp : public may::app
+class scratch_pad : public may::app
 {
   SDL_Cursor *_cursor;
   uint64_t _timer;
 
-  std::map<int, may::font> font_map;
-  std::vector<clicker *> _buttons;
-  std::vector<faller> _fallers;
-  may::gtext my_text;
   may::font my_font;
   may::audio_device audio_device;
   std::vector<float> _waveform;
@@ -161,29 +82,27 @@ class testapp : public may::app
   may::button _pure_button, _major_button, _minor_button;
 
 public:
-  testapp() : testapp("Title") {}
-  testapp(const char *title) : testapp(title, 800, 600) {}
-  testapp(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 24)
+  scratch_pad() : scratch_pad("Scratch Pad") {}
+  scratch_pad(const char *title) : scratch_pad(title, 800, 600) {}
+  scratch_pad(const char *title, int w, int h) : may::app(title, w, h), _cursor(nullptr), my_font("fonts/PerfectDOSVGA437.ttf", 16)
   {
     background_color(0x11, 0x11, 0x11, 0xFF);
     _timer = 0;
+
+    _waveform.assign(1024, 0.0f);
+
+    _data.oscillator = new may::triangle_osc(440);
+
+    _data.tones.push_back(SDL_powf(2.0f, 4.0f / 12.0f));
+    _data.tones.push_back(SDL_powf(2.0f, 7.0f / 12.0f));
+    _data.tones.push_back(SDL_powf(2.0f, 12.0f / 12.0f));
   }
 
-  virtual ~testapp()
+  virtual ~scratch_pad()
   {
-    for (clicker *c : _buttons)
-    {
-      delete c;
-    }
-
     if (_cursor)
       SDL_FreeCursor(_cursor);
     _cursor = nullptr;
-
-    for (auto &pair : font_map)
-    {
-      pair.second.unload();
-    }
   }
 
   virtual void init() override
@@ -199,19 +118,6 @@ public:
     }
 
     SDL_SetWindowResizable(window().window_ptr(), SDL_TRUE);
-    // SDL_SetWindowBordered(window().window_ptr(), SDL_FALSE);
-
-    // err = SDL_SetWindowOpacity(window().window_ptr(), 0.8);
-    // if(err){
-    //   fprintf(stderr, "cannot set window opacity: %s\n", SDL_GetError());
-    // }
-
-    _cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-    SDL_SetCursor(_cursor);
-
-    _buttons.push_back(new clicker(1920 >> 2, 1080 >> 2, SDL_Color{0, 0, 0xAA, 0xAA}, 100, 100, 100, 100));
-    _buttons.push_back(new clicker(1920 >> 1, 1080 >> 1, SDL_Color{0xAA, 0, 0, 0xAA}, 225, 100, 100, 100));
-    _buttons.push_back(new clicker(1920, 1080, SDL_Color{0xAA, 0, 0xAA, 0xAA}, 350, 100, 100, 100));
 
     SDL_SetRenderDrawBlendMode(window().renderer(), SDL_BLENDMODE_BLEND);
 
@@ -302,7 +208,7 @@ public:
   {
     auto &state = game_state();
 
-    for (clicker *button : _buttons)
+    if (_control_panel.flags() & SDL_WINDOW_MOUSE_FOCUS)
     {
       _sq_button.update(state);
       _saw_button.update(state);
@@ -405,45 +311,115 @@ public:
         audio_device.play();
         state.button_unset(SDL_BUTTON_LEFT);
       }
+      else if (!state.is_button_pressed(SDL_BUTTON_LEFT))
+      {
+        audio_device.pause();
+      }
+      //////////////////////////////////////
 
-      _fallers.push_back(faller(state.mouse_posF().x, state.mouse_posF().y, font_map.at(font_size)));
-      _timer = state.tick() + 50;
+      // Control pitch with mouse position
+      if (state.mouse_moved())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.oscillator->frequency(window().height() - state.mouse_pos().y + 75);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      }
+      /////////////////////////////////////
     }
 
-    for (auto it = _fallers.begin(); it != _fallers.end(); ++it)
+    // Draw background gradient
+    for (int row = 0; row < window().height(); ++row)
     {
-      if (it->top() > height())
+      SDL_Color line_color;
+      if (row < window().height() / 2)
       {
-        it = _fallers.erase(it) - 1;
+        unsigned char pct = 0xAA * (window().height() / 2 - row) / (window().height() / 2); // start color gradient at 0xAA because the sound wave is invisible when we start from 0xFF
+        line_color = {0x00, pct, 0x00, 0xFF};
+      }
+      else if (row > window().height() / 2)
+      {
+        unsigned char pct = 0xAA * (row - window().height() / 2) / (window().height() / 2);
+        line_color = {pct, 0x00, 0x00, 0xFF};
       }
       else
       {
-        it->update(state);
-        it->render(renderer);
+        line_color = {0x00, 0x00, 0x00, 0xFF};
       }
+      SDL_SetRenderDrawColor(renderer, line_color.r, line_color.g, line_color.b, line_color.a);
+      SDL_RenderDrawLine(renderer, 0, row, window().width(), row);
     }
+    ////////////////////////////
 
-    SDL_Color bg;
-    background_color(&bg.r, &bg.g, &bg.b, &bg.a);
-
-    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, 0x55);
-    for (int i = 0; i < height(); i += 2)
+    // Draw sound wave
+    if (_data.waveform10.size() > 0)
     {
-      SDL_RenderDrawLine(renderer, 0, i, width(), i);
+      // If the audio thread has produced samples for us, we take them and clear the buffer
+      SDL_LockAudioDevice(audio_device.id());
+      _waveform = _data.waveform10;
+      _data.waveform10.clear();
+      SDL_UnlockAudioDevice(audio_device.id());
     }
+
+    SDL_FPoint screen = {0.0f, window().height() / 2.0f};
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0xFF, 0xFF); // Blue Line
+
+    float dx = (float)window().width() / (float)_waveform.size(); // width -- px per sample
+    for (int i = 0; i < _waveform.size(); ++i)
+    {
+      SDL_FPoint old_screen = screen;
+
+      screen.x = dx * i;
+      if (!audio_device.paused())
+        screen.y = -1.0f * _waveform[i] * (window().height() / 2.0f) + window().height() / 2.0f;
+
+      SDL_RenderDrawLineF(renderer, old_screen.x, old_screen.y, screen.x, screen.y);
+    }
+    //////////////////////////////////////////////////
+    /* ********************* ********************* ********************* */
   }
 };
 
-void clicker::on_click(may::game_state &state)
+void audio_callback(void *userdata, uint8_t *raw_stream, int raw_len)
 {
-  button::on_click(state);
-  testapp &app = state.add_thing<testapp>(nullptr);
+  const float delta_time = 1.0 / 48000.0; // TODO: Remove magic number?
+  static int last_freq = 0;
 
-  SDL_Rect win{0, 0, _res_w, _res_h};
-  SDL_GetWindowPosition(app.window().window_ptr(), &win.x, &win.y);
-  printf("%+d%+d %dx%d\n", win.x, win.y, win.w, win.h);
+  wavedata_t *data = static_cast<wavedata_t *>(userdata);
+  may::base_oscillator *osc = data->oscillator;
+  float *stream = (float *)raw_stream;
+  int len = raw_len / sizeof(float);
 
-  app.window().rect(win);
+  for (int i = 0; i < len; ++i)
+  {
+    // Generate base wave [-1.0, 1.0]
+    float val = osc->value();
+
+    // Apply tones (given as percentage of base frequency)
+    float factor = 1.0f;
+    float addition = 0.0f;
+    for (float tone : data->tones)
+    {
+      may::base_oscillator tone_osc = osc->clone(osc->frequency() * tone);
+      addition += tone_osc.next(delta_time) * factor;
+    }
+
+    addition /= factor * data->tones.size();
+
+    val = (val + addition) / 2.0f;
+
+    // TODO: Apply cutoff
+    float cutoff = 2;
+
+    stream[i] = val;
+
+    osc->next(delta_time);
+  }
+
+  if (data->waveform10.size() == 0)
+    data->waveform10.assign(stream, stream + len);
 }
 
 class image_viewer : public may::app
@@ -587,7 +563,7 @@ int main(int argc, char **argv)
 {
   // may::cfg_reader config("test.cfg");
   //  may::app &app = config.app();
-  testapp app;
+  scratch_pad app;
   app.start();
   return 0;
 }

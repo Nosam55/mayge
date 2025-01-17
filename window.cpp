@@ -8,17 +8,18 @@ namespace may
     this->_window_ptr = nullptr;
   }
 
-  window::window(const window &that)
-  {
-    this->_window_ptr = that._window_ptr;
-    this->_width = that._width;
-    this->_height = that._height;
-    this->_x = that._x;
-    this->_y = that._y;
-  }
+  // window::window(const window &that)
+  // {
+  //   this->_window_ptr = that._window_ptr;
+  //   this->_width = that._width;
+  //   this->_height = that._height;
+  //   this->_x = that._x;
+  //   this->_y = that._y;
+  // }
 
   window::window(const char *title, int width, int height, int x, int y) : _title(title)
   {
+    this->_id = 0;
     this->_width = width;
     this->_height = height;
     this->_x = x;
@@ -32,11 +33,14 @@ namespace may
     {
       throw sdl_exception();
     }
+
+    this->_id = SDL_GetWindowID(_window_ptr);
   }
 
   void window::destroy()
   {
     SDL_DestroyWindow(window_ptr());
+    _id = 0;
   }
 
   void window::fetch_rect()
@@ -106,6 +110,11 @@ namespace may
     }
   }
 
+  uint32_t window::id() const
+  {
+      return _id;
+  }
+
   SDL_Window *window::window_ptr() const
   {
     return this->_window_ptr;
@@ -135,6 +144,11 @@ namespace may
     return renderer;
   }
 
+  uint32_t window::flags() const
+  {
+      return SDL_GetWindowFlags(_window_ptr);
+  }
+
   void window::title(const char *__title)
   {
     this->_title = __title;
@@ -146,14 +160,14 @@ namespace may
     SDL_UpdateWindowSurface(window_ptr());
   }
 
-  window &window::operator=(const window &that)
-  {
-    this->_window_ptr = that._window_ptr;
-    this->_width = that._width;
-    this->_height = that._height;
-    this->_x = that._x;
-    this->_y = that._y;
+  // window &window::operator=(const window &that)
+  // {
+  //   this->_window_ptr = that._window_ptr;
+  //   this->_width = that._width;
+  //   this->_height = that._height;
+  //   this->_x = that._x;
+  //   this->_y = that._y;
 
-    return *this;
-  }
+  //   return *this;
+  // }
 }

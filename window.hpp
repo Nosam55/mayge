@@ -9,6 +9,7 @@ namespace may
   class window
   {
     SDL_Window *_window_ptr;
+    uint32_t _id;
     std::string _title;
     int _width;
     int _height;
@@ -17,7 +18,7 @@ namespace may
 
   public:
     window();
-    window(const window &that);
+    // window(const window &that);
     window(const char *title, int width, int height, int x = SDL_WINDOWPOS_UNDEFINED, int y = SDL_WINDOWPOS_UNDEFINED);
     
     void load();
@@ -39,17 +40,19 @@ namespace may
     void rect(SDL_Rect new_rect);
     void position(SDL_Point pos);
 
+    uint32_t id() const;
     SDL_Window *window_ptr() const;
     SDL_Surface *surface() const;
     SDL_Renderer *renderer() const;
     SDL_Renderer *accelerated_renderer() const;
+    uint32_t flags() const;
 
     inline const char *title() const { return _title.c_str(); }
     void title(const char *__title);
     void update_surface();
 
     // Operators
-    window &operator=(const window &that);
+    // window &operator=(const window &that);
   };
 }
 

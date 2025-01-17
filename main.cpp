@@ -1,9 +1,4 @@
-#include "app.hpp"
-#include "asteroids_app.hpp"
-#include "cfg_reader.hpp"
-#include "gui.hpp"
-#include "audio.hpp"
-
+#include <mayge>
 #include <list>
 #include <ctime>
 #include <array>
@@ -80,6 +75,7 @@ class scratch_pad : public may::app
   wavedata_t _data;
   may::window _control_panel;
   may::button _sin_button, _saw_button, _tri_button, _sq_button;
+  may::button _pure_button, _major_button, _minor_button;
 
 public:
   scratch_pad() : scratch_pad("Scratch Pad") {}
@@ -150,21 +146,33 @@ public:
     _saw_button = may::button(off_white, 0, 50, 100, 50);
     _sin_button = may::button(off_white, 0, 100, 100, 50);
     _tri_button = may::button(off_white, 0, 150, 100, 50);
+    _pure_button = may::button(off_white, 100, 0, 100, 200.0 / 3);
+    _major_button = may::button(off_white, 100, 200.0 / 3, 100, 200.0 / 3);
+    _minor_button = may::button(off_white, 100, 400.0 / 3, 100, 200.0 / 3);
 
     _sq_button.text().font(my_font.ttf_font());
     _saw_button.text().font(my_font.ttf_font());
     _sin_button.text().font(my_font.ttf_font());
     _tri_button.text().font(my_font.ttf_font());
+    _pure_button.text().font(my_font.ttf_font());
+    _major_button.text().font(my_font.ttf_font());
+    _minor_button.text().font(my_font.ttf_font());
 
     _sq_button.fg_color(0x00, 0x00, 0x00, 0xFF);
     _saw_button.fg_color(0x00, 0x00, 0x00, 0xFF);
     _sin_button.fg_color(0x00, 0x00, 0x00, 0xFF);
     _tri_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _pure_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _major_button.fg_color(0x00, 0x00, 0x00, 0xFF);
+    _minor_button.fg_color(0x00, 0x00, 0x00, 0xFF);
 
     _sq_button.text().text("Square");
     _saw_button.text().text("Sawtooth");
     _sin_button.text().text("Sine");
     _tri_button.text().text("Triangle");
+    _pure_button.text().text("Pure");
+    _major_button.text().text("Major");
+    _minor_button.text().text("Minor");
   }
 
   void on_event(SDL_Event &event) override
@@ -180,8 +188,7 @@ public:
       }
       else if (event.window.event == SDL_WINDOWEVENT_CLOSE)
       {
-        SDL_Window *closed = SDL_GetWindowFromID(event.window.windowID);
-        if (closed == _control_panel.window_ptr())
+        if (event.window.windowID == _control_panel.id())
         {
           _control_panel.destroy();
         }
@@ -203,11 +210,9 @@ public:
       _saw_button.update(state);
       _sin_button.update(state);
       _tri_button.update(state);
-
-      _sq_button.center_text();
-      _saw_button.center_text();
-      _sin_button.center_text();
-      _tri_button.center_text();
+      _pure_button.update(state);
+      _major_button.update(state);
+      _minor_button.update(state);
 
       if (_sq_button.is_clicked() && !_sq_button.is_held())
       {
@@ -225,17 +230,47 @@ public:
 
         SDL_UnlockAudioDevice(audio_device.id());
       }
-      else if(_sin_button.is_clicked() && !_sin_button.is_held()){
+      else if (_sin_button.is_clicked() && !_sin_button.is_held())
+      {
         SDL_LockAudioDevice(audio_device.id());
-        
+
         select_oscillator<may::sine_osc>(_data, _data.oscillator->frequency());
 
         SDL_UnlockAudioDevice(audio_device.id());
       }
-      else if(_tri_button.is_clicked() && !_tri_button.is_held()){
+      else if (_tri_button.is_clicked() && !_tri_button.is_held())
+      {
         SDL_LockAudioDevice(audio_device.id());
-        
+
         select_oscillator<may::triangle_osc>(_data, _data.oscillator->frequency());
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_pure_button.is_clicked() && !_pure_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(1.0);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_major_button.is_clicked() && !_major_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(SDL_pow(2.0, 4.0 / 12.0));
+        _data.tones.push_back(SDL_pow(2.0, 7.0 / 12.0));
+        _data.tones.push_back(2.0);
+
+        SDL_UnlockAudioDevice(audio_device.id());
+      } else if (_minor_button.is_clicked() && !_minor_button.is_held())
+      {
+        SDL_LockAudioDevice(audio_device.id());
+
+        _data.tones.clear();
+        _data.tones.push_back(SDL_pow(2.0, 3.0 / 12.0));
+        _data.tones.push_back(SDL_pow(2.0, 7.0 / 12.0));
+        _data.tones.push_back(2.0);
 
         SDL_UnlockAudioDevice(audio_device.id());
       }
@@ -245,10 +280,21 @@ public:
     SDL_Renderer *renderer_cp = _control_panel.accelerated_renderer();
     SDL_RenderClear(renderer_cp);
 
+    _sq_button.center_text();
+    _saw_button.center_text();
+    _sin_button.center_text();
+    _tri_button.center_text();
+    _pure_button.center_text();
+    _major_button.center_text();
+    _minor_button.center_text();
+
     _sq_button.render(renderer_cp);
     _saw_button.render(renderer_cp);
     _sin_button.render(renderer_cp);
     _tri_button.render(renderer_cp);
+    _pure_button.render(renderer_cp);
+    _major_button.render(renderer_cp);
+    _minor_button.render(renderer_cp);
 
     SDL_RenderPresent(renderer_cp);
 

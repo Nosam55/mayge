@@ -1,0 +1,6 @@
+#ifndef MAYGE_
+#define MAYGE_
+
+@MAYGE_HEADER_CONTENT@
+
+#endif /* MAYGE_ */

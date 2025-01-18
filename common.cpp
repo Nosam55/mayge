@@ -3,6 +3,20 @@
 
 namespace may
 {
+  template <>
+  inline float random(float min, float max)
+  {
+    std::uniform_real_distribution<float> distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
+  template <>
+  inline double random(double min, double max)
+  {
+    std::uniform_real_distribution<double> distribution(min, max);
+    return distribution(_rand_engine);
+  }
+
   actor::actor() : actor(0.0, 0.0, 0.0)
   {
   }

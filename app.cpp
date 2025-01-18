@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "mayge_config.h"
 #include <SDL2/SDL_ttf.h>
 
 namespace may
@@ -36,6 +37,8 @@ namespace may
     SDL_version compiled;
     SDL_version linked;
     SDL_version const *linked_ptr;
+
+    printf("mayge %d.%d (c) %s\n", MAYGE_VERSION_MAJOR, MAYGE_VERSION_MINOR, __DATE__ + 7);
 
     SDL_VERSION(&compiled);
     SDL_GetVersion(&linked);

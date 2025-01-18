@@ -60,6 +60,7 @@ namespace may
   {
     image null_img("MAY NULL IMAGE");
     null_img._surface = SDL_CreateRGBSurface(0, 1, 1, 32, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+    return null_img;
   }
 
   void image::unload_static()

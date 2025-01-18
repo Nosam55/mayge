@@ -1,9 +1,2 @@
 .vscode/*
-obj/*
-debug
-release
-debug.exe
-release.exe
-include/*
-winclude/*
-wlib/*
+build/

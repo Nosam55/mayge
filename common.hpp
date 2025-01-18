@@ -7,6 +7,8 @@
 #include <string>
 #include <random>
 
+#include "mayge_config.h"
+
 inline SDL_Point operator+(const SDL_Point &a, SDL_Point b) { return {a.x + b.x, a.y + b.y}; }
 inline SDL_FPoint operator+(const SDL_FPoint &a, SDL_FPoint b) { return {a.x + b.x, a.y + b.y}; }
 inline SDL_Rect operator+(const SDL_Rect &a, SDL_Point b) { return {a.x + b.x, a.y + b.y, a.w, a.h}; }
@@ -17,21 +19,7 @@ namespace may
   template <typename T>
   T random(T min, T max)
   {
-    std::uniform_int_distribution distribution(min, max);
-    return distribution(_rand_engine);
-  }
-
-  template <>
-  inline float random(float min, float max)
-  {
-    std::uniform_real_distribution distribution(min, max);
-    return distribution(_rand_engine);
-  }
-
-  template <>
-  inline double random(double min, double max)
-  {
-    std::uniform_real_distribution distribution(min, max);
+    std::uniform_int_distribution<T> distribution(min, max);
     return distribution(_rand_engine);
   }
 

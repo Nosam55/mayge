@@ -1,0 +1,7 @@
+#ifndef MAYGE_INFO_
+#define MAYGE_INFO_
+
+#define MAYGE_VERSION_MAJOR @mayge_VERSION_MAJOR@
+#define MAYGE_VERSION_MINOR @mayge_VERSION_MINOR@
+
+#endif /* MAYGE_INFO_ */
